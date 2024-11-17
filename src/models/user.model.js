@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const userModel = new Schema({
-  _id: {type: Number},
+  _id: {type: String},
   userName: { type: String },
   email: { type: String },
   phone: { type: String },
@@ -10,7 +10,8 @@ const userModel = new Schema({
   followerNum: { type: Number },
   followingNum: { type: Number },
   sex: { type: Boolean },
-  age: { type: Number }
+  age: { type: Number },
+  active: Boolean
 }, { timestamps: true })
 
 module.exports = mongoose.model('User', userModel)

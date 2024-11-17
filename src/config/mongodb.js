@@ -16,6 +16,6 @@ async function connect() {
 const mongoose = require('mongoose')
 const { log } = require('../helper')
 async function mongooseConnect() {
-  await mongoose.connect(uri).then(()=> log('success')).catch(error => log(error))
+  await mongoose.connect(uri).then(()=> console.log('success')).catch(error => log(error))
 } 
 module.exports = {mongooseConnect }
