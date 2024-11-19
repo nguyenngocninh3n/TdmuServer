@@ -1,6 +1,7 @@
 const friendModel = require('../../models/friend.model')
-const { FRIEND_STATUS } = require('../../utils/constants')
+const { FRIEND_STATUS, RESPONSE_STATUS } = require('../../utils/constants')
 const UserController = require('../UserController')
+const userHelper = require('../UserController/userHelper')
 
 const helper = {
   createFriend: async ( ownerID, userID, status ) => {
@@ -29,7 +30,7 @@ const helper = {
 
   addFriend: async (ownerID, userID, status ) => {
     console.log('userID: ', userID)
-    const userData = await UserController.helper.getUserDataById(userID)
+    const userData = await userHelper.getUserDataById(userID)
     console.log('userData: ', userData)
     const newData = {
       _id: userID,
@@ -65,29 +66,54 @@ const helper = {
             }
         }
     })
+  },
+  handleGetListFriend: async (userID) => {
+    return await friendModel
+      .findById(userID)
+      .then(data => {
+        if(data) {
+          const customData = data.data.filter(item => item.status === FRIEND_STATUS.FRIEND)
+           customData.sort((a, b) => {
+            const itemA = a.userName.trim().split(' ')
+            const itemB = b.userName.trim().split(' ')
+            const result = itemA.at(itemA.length - 1).localeCompare(itemB.at(itemB.length - 1))
+            return result
+          })
+          return {data: customData, status: RESPONSE_STATUS.SUCCESS}
+        }
+         else {
+          return {data: [], status: RESPONSE_STATUS.SUCCESS}
+         }
+      }).catch(error => {
+        console.log('error when get list friend: ', error)
+        return {data: [], status: RESPONSE_STATUS.ERROR}
+      })
   }
 }
 class FriendController {
-  getListFriend(req, res) {
+  helpers = {
+    ...helper
+  }
+
+  async getListFriend(req, res) {
     const userID = req.params.id
     console.log('inner getListFriend: ', 'data: ', req.params)
-    friendModel
-      .findById(userID)
-      .then(data => {
-        console.log('data in getlist friend: ', data)
-        res.status(200).json(data)
-      })
-      .catch(error => {
-        console.log('error when get list friend: ', error)
+    await helper.handleGetListFriend(userID).then(data => {
+      if(data.status === RESPONSE_STATUS.SUCCESS) {
+        const customData = data.data.filter(item => item.status === FRIEND_STATUS.FRIEND)
+        res.status(200).json({...data, data: customData})
+      }
+      else {
         res.status(500).json({ error })
-      })
+      }
+    })
   }
 
   getStatusFriend(req, res) {
     const  {ownerID, userID} = req.query
     console.log('inner getStatus friend: ', 'data: ', ownerID, ' u ', userID)
     friendModel.findById(ownerID).then(data => {
-        const userData = data.data.filter(item => item._id === userID)
+        const userData = data?.data.filter(item => item._id === userID)
         if(userData?.at(0)) {
             res.status(200).json({ownerID, userID, status: userData.at(0).status})
         } else {

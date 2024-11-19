@@ -13,7 +13,8 @@ class ResourceController {
         readdir(folderPath, (err, files) => {
             if(err) {
                 console.log('Lỗi khi đọc file trong getconventionfiles: ', err)
-                res.status(500).json({err})
+                res.status(200).json([])
+                return;
             }
             const newArr = files.map(item => responsePath + item )
             res.status(200).json(newArr)

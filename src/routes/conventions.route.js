@@ -10,6 +10,7 @@ router.get('/conventionIDs', ConventionController.getConventionIDs)
 router.get('/owner/:id', ConventionController.getConventions)
 router.get('/:id', ConventionController.getConventionByID)
 router.post('/store', ConventionController.storeConvention)
+router.post('/group/store', ConventionController.storeGroupConvention)
 router.post('/:id', ConventionController.storeMessage)
 
 module.exports = router

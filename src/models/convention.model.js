@@ -7,7 +7,7 @@ const conventionModel = new Schema({
     type: {type: String, default: 'private'},
     uids: Array,
     members: [MemberModel],
-    avatar: {type: String},
+    avatar: {type: String, default: null},
     name: String,
     data: [ChatDataModel]
 }, {timestamps: true})

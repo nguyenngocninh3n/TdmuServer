@@ -11,7 +11,7 @@ const userModel = new Schema({
   followingNum: { type: Number },
   sex: { type: Boolean },
   age: { type: Number },
-  active: Boolean
+  active: {type: Boolean, default: true}
 }, { timestamps: true })
 
 module.exports = mongoose.model('User', userModel)
