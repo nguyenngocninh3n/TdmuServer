@@ -43,12 +43,26 @@ const SCOPE = {
   PRIVATE: 'PRIVATE'
 }
 
+const POST_STATUS = {
+  ACTIVE: 'ACTIVE',
+  TRASH: 'TRASH',
+  DELETE: 'DELETE'
+}
+
 const POST_ATTACHMENT = {
   TEXT: 'TEXT',
   IMAGE: 'image/jpeg',
   VIDEO: 'video/mp4',
   NOTIFY: 'NOTIFY',
   MIX: 'MIX'
+}
+
+const POST_ACTION = {
+  UPDATE_CONTENT: 'UPDATE_CONTENT',
+  UPDATE_ATTACHMENT: 'UPDATE_ATTACHMENT',
+  UPDATE_ALL: 'UPDATE_ALL',
+  DELETE: 'DELETE',
+  TRASH: 'TRASH'
 }
 
 const FOLDER_NAME = {
@@ -74,6 +88,8 @@ module.exports = {
   HOST,
   PORT,
   POST_ATTACHMENT,
+  POST_STATUS,
+  POST_ACTION,
   FOLDER_NAME,
   SCOPE,
   FILE_EXT,

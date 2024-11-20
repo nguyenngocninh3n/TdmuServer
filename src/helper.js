@@ -31,15 +31,16 @@ const storeMultiFile = async (staticFilePaths, dirPath, filesData) => {
           console.error('Lỗi khi tạo thư mục:', err.message)
           return
         }
-        filesData.forEach((item, index) =>
-            fs.writeFile(staticFilePaths.at(index), item.source, err => {
+        filesData.forEach((item, index) => {
+          const fileBuffer = Buffer.from(item.source, 'base64') 
+            fs.writeFileSync(staticFilePaths.at(index), fileBuffer, err => {
               if (err) {
                 console.error('Lỗi khi lưu file:', err.message)
               } else {
                 console.log('File đã được lưu thành công tại:', staticFilePaths.at(index))
               }
             })
-          )
+    })
       })
   })
 }
