@@ -12,7 +12,7 @@ const helper = {
         {
           _id: userID,
           userName: userData.userName,
-          userAvatar: userData.avatar,
+          avatar: userData.avatar,
           status: status
         }
       ]
@@ -34,7 +34,7 @@ const helper = {
     console.log('userData: ', userData)
     const newData = {
       _id: userID,
-      userAvatar: userData.avatar,
+      avatar: userData.avatar,
       userName: userData.userName,
       status
     }
@@ -67,6 +67,7 @@ const helper = {
         }
     })
   },
+
   handleGetListFriend: async (userID) => {
     return await friendModel
       .findById(userID)
@@ -100,8 +101,7 @@ class FriendController {
     console.log('inner getListFriend: ', 'data: ', req.params)
     await helper.handleGetListFriend(userID).then(data => {
       if(data.status === RESPONSE_STATUS.SUCCESS) {
-        const customData = data.data.filter(item => item.status === FRIEND_STATUS.FRIEND)
-        res.status(200).json({...data, data: customData})
+        res.status(200).json(data)
       }
       else {
         res.status(500).json({ error })

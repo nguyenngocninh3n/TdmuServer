@@ -4,7 +4,7 @@ const Schema = mongoose.Schema
 const friendDataModel = new Schema({
     _id: String,
     userName: String,
-    userAvatar: String,
+    avatar: String,
     status: String,
 
   }, {timestamps: true})

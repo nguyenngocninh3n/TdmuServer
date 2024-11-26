@@ -2,8 +2,9 @@ const express = require('express')
 const PostController = require('../controllers/PostController')
 const postRouter = express.Router()
 
+postRouter.get('/user', PostController.handleGetUserPosts)
 postRouter.get('/:id/', PostController.handleGetPost)
-postRouter.get('/user/:id', PostController.handleGetUserPosts)
+
 postRouter.put('/:id/edit', PostController.handleEditPost)
 postRouter.put('/:id/trash', PostController.handleTrashPost)
 postRouter.delete('/:id/delete', PostController.handleEditPost)

@@ -69,10 +69,21 @@ const getUploadFileAndFolderPath = (__dirname, folderType, folderID, attachments
   return [relativeFilePaths, staticFilePaths, dirPath]
 }
 
+const removeVietnameseTones = (str) => {
+  return str
+    .normalize('NFD') // Tách chữ và dấu thành các thành phần riêng
+    .replace(/[\u0300-\u036f]/g, '') // Loại bỏ các dấu
+    .replace(/đ/g, 'd') // Chuyển 'đ' thành 'd'
+    .replace(/Đ/g, 'D') // Chuyển 'Đ' thành 'D'
+    .toLowerCase(); // Chuyển về chữ thường
+};
+
+
 const helper = {
   storeFile,
   storeMultiFile,
   getUploadFolderPath,
-  getUploadFileAndFolderPath
+  getUploadFileAndFolderPath,
+  removeVietnameseTones
 }
 module.exports = helper

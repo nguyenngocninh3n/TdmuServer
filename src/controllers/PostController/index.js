@@ -6,30 +6,44 @@ const {
   POST_ATTACHMENT,
   FILE_EXT,
   POST_ACTION,
-  POST_STATUS
+  POST_STATUS,
+  SCOPE
 } = require('../../utils/constants')
+const { getStatusFriend } = require('../FriendController')
+const friendHelper = require('../FriendController/friendHelper')
 const UserController = require('../UserController')
+const userHelper = require('../UserController/userHelper')
 
-const handleSavedAndGetAttachments = (userID, attachments) => {
+const handleSavedAndGetAttachments = (userID, attachments, custom) => {
   const [relativeFilePaths, staticFilePaths, dirPath] = helper.getUploadFileAndFolderPath(
     __dirname,
-    FOLDER_NAME.POSTS,
+    custom ? custom + FOLDER_NAME.POSTS : FOLDER_NAME.POSTS,
     userID,
     attachments
-  )
-  console.log('static paths: ', staticFilePaths)
-  console.log('static dirPath: ', dirPath)
-  console.log(
-    'attachments: ',
-    attachments.map(item => ({ length: item.source.length, type: item.type }))
   )
   helper.storeMultiFile(staticFilePaths, dirPath, attachments)
   return relativeFilePaths
 }
 
-const getUserPosts = async (userID, status) => {
-  const posts = postModel.find({ userID: userID, status:status }).sort({createdAt: 'ascending'})
-  return posts
+const getUserPosts = async (userID, ownerID, status) => {
+ 
+  const queyObj = {
+    userID: userID,
+    status: status
+  }
+  if (ownerID === userID) {
+    const posts = await postModel.find(queyObj).sort({ createdAt: 'desc' })
+    return posts
+  } else {
+    const friendStatus = await friendHelper.getFriendStatus(ownerID, userID)
+    console.log('friend status: ', friendStatus)
+    const scope = friendStatus === SCOPE.FRIEND
+      ? [SCOPE.PUBLIC, SCOPE.FRIEND]
+      : SCOPE.PUBLIC
+      console.log('scope: ', scope)
+    const posts = await postModel.find({ ...queyObj,  scope: {$in: scope} }).sort({ createdAt: 'desc' })
+    return posts
+  }
 }
 
 class PostController {
@@ -50,9 +64,13 @@ class PostController {
   }
 
   async handleGetUserPosts(req, res) {
-    const userID = req.params.id
-    const userData = await UserController.helper.getUserDataById(userID)
-    const posts = await getUserPosts(userID, POST_STATUS.ACTIVE)
+    const {userID, ownerID} = req.query
+    console.log('query: ', req.query)
+    console.log('userID vaf ownerID: ', userID, ' ', ownerID)
+    console.log(1)
+    const userData = await  userHelper.getUserDataById(userID)
+    const posts = await getUserPosts(userID, ownerID, POST_STATUS.ACTIVE)
+    console.log(2)
     if (userData && posts) {
       const customData = {
         code: RESPONSE_STATUS.SUCCESS,
@@ -61,6 +79,7 @@ class PostController {
         userAvatar: userData.avatar,
         data: posts
       }
+      console.log(3)
       res.status(200).json(customData)
     } else {
       console.log('error when get user posts: ')
@@ -71,15 +90,13 @@ class PostController {
   }
 
   handleStorePost(req, res) {
-    const { userID, attachments, content } = req.body
+    const data = req.body
     console.log(
-      'attachment in store post: ',
-      attachments.map(item => item.source.length)
+      'attachment in store post: ', data.scope
     )
-    const newAttachments = handleSavedAndGetAttachments(userID, attachments)
+    const newAttachments = handleSavedAndGetAttachments(data.userID, data.attachments, data.groupID ? 'groups/' + data.groupID.toString() +'/' : null)
     const newPost = new postModel({
-      userID,
-      content,
+     ...data,
       attachments: newAttachments
     })
     newPost
@@ -94,12 +111,13 @@ class PostController {
   }
 
   async handleEditPost(req, res) {
+    console.log('update post: ', req.body)
     const postID = req.params.id
     const data = req.body
     switch (data.action) {
       case POST_ACTION.UPDATE_CONTENT: {
         postModel
-          .findByIdAndUpdate(postID, { content: data.content })
+          .findByIdAndUpdate(postID, { content: data.content, scope: data.scope })
           .then(result => {
             res.status(200).json(RESPONSE_STATUS.SUCCESS)
           })
@@ -112,7 +130,7 @@ class PostController {
       case POST_ACTION.UPDATE_ATTACHMENT: {
         const newAttachments = handleSavedAndGetAttachments(data.userID, data.attachments)
         postModel
-          .findByIdAndUpdate(postID, { attachments: newAttachments })
+          .findByIdAndUpdate(postID, { attachments: newAttachments, scope: data.scope })
           .then(result => {
             res.status(200).json(RESPONSE_STATUS.SUCCESS)
           })
@@ -125,7 +143,7 @@ class PostController {
       case POST_ACTION.UPDATE_ALL: {
         const newAttachments = handleSavedAndGetAttachments(data.userID, data.attachments)
         postModel
-          .findByIdAndUpdate(postID, { content: data.content, attachments: newAttachments })
+          .findByIdAndUpdate(postID, { content: data.content,scope: data.scope, attachments: newAttachments })
           .then(result => {
             res.status(200).json(RESPONSE_STATUS.SUCCESS)
           })
@@ -153,7 +171,16 @@ class PostController {
     })
   }
 
-  async handleDeletePost(req, res) {}
+  async handleDeletePost(req, res) {
+    const postID = req.params.id
+    console.log('post id: ', ' ', typeof postID, ' ' ,postID )
+    postModel.findByIdAndUpdate(postID, {status: POST_STATUS.DELETE}).then(data => {
+      res.status(200).json(RESPONSE_STATUS.SUCCESS)
+    }).catch(error => {
+      console.log('Error when delete post', error)
+        res.status(500).json(RESPONSE_STATUS.ERROR)
+    })
+  }
 
   async handleSharePost(req, res) {}
 }

@@ -1,14 +1,17 @@
 const { log, getUploadFileAndFolderPath, storeFile, storeMultiFile } = require('../../helper')
 const userModel = require('../../models/user.model')
-const { FOLDER_NAME, POST_ATTACHMENT } = require('../../utils/constants')
+const { FOLDER_NAME, POST_ATTACHMENT, RESPONSE_STATUS } = require('../../utils/constants')
 const fs = require('fs')
 const https = require('https')
 const FriendController = require('../FriendController')
 const friendModel = require('../../models/friend.model')
+const groupHelper = require('../GroupController/groupHelper')
+const helper = require('../../helper')
 const convertDataToUser = data => {
   const newUser = {
     _id: data._id,
     userName: data.name,
+    searchName: helper.removeVietnameseTones(data.name),
     email: data.email,
     phone: null,
     avatar: data.picture,
@@ -119,6 +122,7 @@ class userController {
           data: []
         })
         newFriend.save()
+      groupHelper.createGroupUser(clientData._id)
       const newUser = await userModel.create(customData)
       res.status(200).json(newUser)
     }
@@ -165,6 +169,16 @@ class userController {
         console.log('Lỗi khi in get convention user infor: ', error)
         res.status(500).json({ error })
       })
+  }
+
+  async handleUpdateBio(req, res) {
+    const userID = req.params.id
+    userModel.findByIdAndUpdate(userID, {bio: req.body.value}).then(data => {
+      res.status(200).json(RESPONSE_STATUS.SUCCESS)
+    }).catch(error => {
+      console.log('error when update bio: ', error)
+      res.status(500).json(RESPONSE_STATUS.ERROR)
+    })
   }
 }
 

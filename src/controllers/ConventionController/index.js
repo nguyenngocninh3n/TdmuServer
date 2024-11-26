@@ -150,6 +150,7 @@ class ConventionController {
       conventionModel
         .findById(_id)
         .then(data => {
+          console.log('get convention successfully')
           res.json(data)
         })
         .catch(error => {

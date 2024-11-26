@@ -3,6 +3,11 @@ const conventionsRouter = require('./conventions.route')
 const friendRouter = require('./friend.route')
 const resourceRouter = require('./resource.route')
 const postRouter = require('./post.route')
+const commentRouter = require('./comment.route')
+const reactionRouter = require('./reaction.route')
+const groupRouter = require('./group.route')
+const searchRouter = require('./search.route')
+
 
 function routes(app) {
   app.use('/convention', conventionsRouter)
@@ -10,6 +15,10 @@ function routes(app) {
   app.use('/friend', friendRouter )
   app.use('/resource', resourceRouter)
   app.use('/post', postRouter)
+  app.use('/comment', commentRouter)
+  app.use('/reaction', reactionRouter)
+  app.use('/group', groupRouter)
+  app.use('/search', searchRouter)
   app.get('/home', (req, res) => res.send('This home'))
   app.get('/', (req, res) => res.json({ state: 'success' }))
 

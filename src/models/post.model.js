@@ -1,11 +1,15 @@
 const mongoose = require('mongoose')
-const { SCOPE, POST_STATUS } = require('../utils/constants')
+const { SCOPE, POST_STATUS, POST_TYPE } = require('../utils/constants')
 const Schema = mongoose.Schema
 
 const postModal = new Schema(
   {
     childrenID: {type: mongoose.Types.ObjectId, default: null},
+    groupID: {type: mongoose.Types.ObjectId, default: null},
     userID: String,
+    userName: {type:String, default: null},
+    avatar: {type:String, default: null},
+    type: {type: String, default: POST_TYPE.PERSONAL},
     attachments: {type: Array, default: []},
     content: {type: String, default: ''},
     scope: {type: String, default: SCOPE.PUBLIC},

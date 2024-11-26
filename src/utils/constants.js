@@ -37,10 +37,17 @@ const FRIEND_STATUS = {
   FRIEND: 'FRIEND'
 }
 
+const MEMBER_STATUS = {
+  PENDING: 'PENDING',
+  BLOCK: 'BLOCK',
+  ACCEPT: 'ACCEPT'
+}
+
 const SCOPE = {
   PUBLIC: 'PUBLIC',
   FRIEND: 'FRIEND',
-  PRIVATE: 'PRIVATE'
+  PRIVATE: 'PRIVATE',
+  OWNER: 'OWNER'
 }
 
 const POST_STATUS = {
@@ -55,6 +62,12 @@ const POST_ATTACHMENT = {
   VIDEO: 'video/mp4',
   NOTIFY: 'NOTIFY',
   MIX: 'MIX'
+}
+
+const POST_TYPE = {
+  PERSONAL: 'PERSONAL',
+  SHARE: 'SHARE',
+  GROUP: 'GROUP'
 }
 
 const POST_ACTION = {
@@ -81,8 +94,10 @@ const FILE_EXT = {
 
 const MEMBER_ROLE = {
   ADMIN: 'ADMIN',
+  CENSOR: 'CENSOR',
   MEMBER: 'MEMBER'
 }
+
 
 module.exports = {
   HOST,
@@ -90,6 +105,7 @@ module.exports = {
   POST_ATTACHMENT,
   POST_STATUS,
   POST_ACTION,
+  POST_TYPE,
   FOLDER_NAME,
   SCOPE,
   FILE_EXT,
@@ -98,5 +114,7 @@ module.exports = {
   RESPONSE_STATUS,
   MESSAGE_NOTIFY_TYPE,
   MESSAGE_ACTION,
-  MEMBER_ROLE
+
+  MEMBER_ROLE,
+  MEMBER_STATUS
 }
