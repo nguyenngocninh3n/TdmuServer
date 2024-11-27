@@ -4,6 +4,7 @@ const PostController = require('../PostController')
 const groupUserModel = require('../../models/user.group.model')
 const groupMemberModel = require('../../models/group.member.model')
 const { RESPONSE_STATUS, MEMBER_STATUS, MEMBER_ROLE } = require('../../utils/constants')
+const helper = require('../../helper')
 
 const getAllgroup = async () =>
   await groupModel
@@ -266,8 +267,9 @@ const storeGroupMember = async (groupID, role, status, userData) => {
 // GROUP ACTION
 
 const createGroup = async (name, bio, scope) => {
+  const searchName = helper.removeVietnameseTones(name)
   const newGroup = await groupModel
-    .create({ name, bio, scope })
+    .create({ name, bio, scope, searchName })
     .then(data => {
       return { status: RESPONSE_STATUS.SUCCESS, data: data }
     })
@@ -279,8 +281,9 @@ const createGroup = async (name, bio, scope) => {
 }
 
 const updateGroupName = async (groupID, name) => {
+  const searchName = helper.removeVietnameseTones(name)
   const response = await groupModel
-    .findByIdAndUpdate(groupID, { name: name }, { returnDocument: 'after' })
+    .findByIdAndUpdate(groupID, { name: name, searchName }, { returnDocument: 'after' })
     .then(data => {
       return { status: RESPONSE_STATUS.SUCCESS, data: data }
     })

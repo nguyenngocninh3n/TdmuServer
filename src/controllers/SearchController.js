@@ -1,3 +1,5 @@
+const helper = require('../helper')
+const groupModel = require('../models/group.model')
 const postModel = require('../models/post.model')
 const userModel = require('../models/user.model')
 const { SCOPE, RESPONSE_STATUS } = require('../utils/constants')
@@ -62,8 +64,15 @@ class SearchController {
     const { userID, queryString } = req.params
     console.log('into get search user: ', userID, ' ', queryString)
     console.log('index: ', await userModel.listIndexes())
-    const response = userModel
-      .find({ $text: { $search: queryString } })
+    // const response = userModel
+    //   .find(
+    //     { $text: { $search: queryString, $caseSensitive: false } },
+    //     { score: { $meta: 'textScore' } }
+    //   )
+    //   .sort({ score: { $meta: 'textScore' } })
+
+    userModel
+      .find({ searchName: { $regex: queryString, $options: 'i' } })
       .then(data => res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data }))
       .catch(error => {
         console.log('Error when get serch user: ', error)
@@ -71,7 +80,18 @@ class SearchController {
       })
   }
 
-  async getSearchGroup(req, res) {}
+  async getSearchGroup(req, res) {
+    const { userID, queryString } = req.params
+    const customQuery = helper.removeVietnameseTones(queryString)
+    groupModel
+      .find({ $text: { $search: customQuery } }, { score: { $meta: 'textScore' } })
+      .sort({ score: { $meta: 'textScore' } })
+      .then(data => res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data }))
+      .catch(error => {
+        console.log('Error when get serch group: ', error)
+        res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: null })
+      })
+  }
 
   async getSearchImage(req, res) {}
 
