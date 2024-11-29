@@ -18,7 +18,8 @@ const convertDataToUser = data => {
     followerNum: 0,
     followingNum: 0,
     sex: null,
-    age: null
+    age: null,
+    messagingToken: data.messagingToken
   }
   return new userModel(newUser)
 }

@@ -13,7 +13,8 @@ const userModel = new Schema({
   followingNum: { type: Number },
   sex: { type: Boolean },
   age: { type: Number },
-  active: {type: Boolean, default: true}
+  active: {type: Boolean, default: true},
+  messagingToken: {type: String, default: null}
 }, { timestamps: true })
 userModel.index({'searchName': 'text'})
 
