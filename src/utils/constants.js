@@ -98,6 +98,12 @@ const MEMBER_ROLE = {
   MEMBER: 'MEMBER'
 }
 
+const TYPE_SCREEN = {
+  PROFILE: 'PROFILE',
+  POST: 'POST',
+  CONVENTION: 'CONVENTION',
+  CALL: 'CALL'
+}
 
 module.exports = {
   HOST,
@@ -116,5 +122,6 @@ module.exports = {
   MESSAGE_ACTION,
 
   MEMBER_ROLE,
-  MEMBER_STATUS
+  MEMBER_STATUS,
+  TYPE_SCREEN
 }

@@ -12,7 +12,7 @@
 //   console.log('Pinged your deployment. You successfully connected to MongoDB!')
 // }
 
-const uri = "mongodb+srv://socialapp:uaGuO0pKFz0ugnNO@socialapp.wb6nr.mongodb.net/?retryWrites=true&w=majority&appName=SocialApp";
+const uri = "mongodb+srv://socialapp:uaGuO0pKFz0ugnNO@socialapp.wb6nr.mongodb.net/socialapp?retryWrites=true&w=majority&appName=SocialApp";
 
 
 // Mongoose

@@ -29,7 +29,7 @@ app.use(methodOverride('_method'))
 
 //router
 const routes =  require('./routes/')
-const { HOST, PORT } = require('./utils/constants')
+const { HOST, PORT, TYPE_SCREEN } = require('./utils/constants')
 routes(app)
 
 //socket
@@ -52,15 +52,16 @@ setInterval(()=> {
   count++
   const data = {
     channelID: '123',
-    senderID: '1234',
+    senderID: 'SvaAEothwpRCGdvECZoinGNumi12',
     senderName: 'ninh',
     senderAvatar: 'uploads/users/SvaAEothwpRCGdvECZoinGNumi12/image/0.6739125844.png',
     title: 'Tiêu đề' + count,
     body:'Đây là nội dung',
-    channelType:'Bài viết'
+    channelType:'Bài viết',
+    type: TYPE_SCREEN.PROFILE
   }
   fcmNotify.sendNotification(
-    'fIxc2KwERduIUAh84k_iMC:APA91bEmk5XQAB9Zlb-lE02M3KT-00mIZOVR7KcmWiCVBd6NC_Dl6w1wzEtFi_hjPfOOnq5GCkbxGQ1VODVF7_g5zxTXNNfk5cDiJLJNggF41SQ_54F3RFk',
+    'fO6tAzfDTnmCTIa8xnvLNA:APA91bFhURsYBzxP2XshutbCrDyIA8HBr5Mvf3kkKBPlou8e-JzZ518ahpQhXKp_vjapVaDa8APCgw-jJ5iSQ3v8vNrtgYzrDhunIzuJmzTPG2TsDmrxaKs',
     'Tiêu đề' + count,
     'Đây là nội dung',
     data

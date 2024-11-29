@@ -79,6 +79,7 @@ class userController {
     const userData = convertDataToUser(req.body)
     let newUser = await getUserDataById(userData._id)
     if (newUser) {
+      userModel.findByIdAndUpdate(newUser._id, {messagingToken: req.body.messagingToken})
       res.json(newUser)
     } else {
       const clientData = req.body
