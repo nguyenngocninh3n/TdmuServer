@@ -19,7 +19,7 @@ const convertDataToUser = data => {
     followingNum: 0,
     sex: null,
     age: null,
-    messagingToken: data.messagingToken
+    fcmToken: data.messagingToken
   }
   return new userModel(newUser)
 }
@@ -75,11 +75,14 @@ class userController {
   // }
 
   async createUser(req, res) {
-    console.log('start create user')
+    console.log('start create user: ', req.body.messagingToken)
     const userData = convertDataToUser(req.body)
     let newUser = await getUserDataById(userData._id)
     if (newUser) {
-      userModel.findByIdAndUpdate(newUser._id, {messagingToken: req.body.messagingToken})
+      console.log('update fcmToken: ', req.body.messagingToken)
+      userModel.findByIdAndUpdate(newUser._id, {fcmToken: req.body.messagingToken}, {returnDocument:'after'}).then(data => {
+        console.log('after update: ', data.fcmToken)
+      })
       res.json(newUser)
     } else {
       const clientData = req.body

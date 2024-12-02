@@ -5,7 +5,7 @@ const getFriendStatus = async (ownerID, userID) => {
   const data = await friendModel.findById(ownerID).then(data => {
     const customData =  data.data.find(item => item._id === userID)
     console.log('friend data: ', data)
-    return customData.status
+    return customData?.status ?? FRIEND_STATUS.NONE
   }).catch(error => {
     console.log('errror get friend status at friendHelp: ', error)
     return null
