@@ -80,9 +80,15 @@ class userController {
     let newUser = await getUserDataById(userData._id)
     if (newUser) {
       console.log('update fcmToken: ', req.body.messagingToken)
-      userModel.findByIdAndUpdate(newUser._id, {fcmToken: req.body.messagingToken}, {returnDocument:'after'}).then(data => {
-        console.log('after update: ', data.fcmToken)
-      })
+      userModel
+        .findByIdAndUpdate(
+          newUser._id,
+          { fcmToken: req.body.messagingToken },
+          { returnDocument: 'after' }
+        )
+        .then(data => {
+          console.log('after update: ', data.fcmToken)
+        })
       res.json(newUser)
     } else {
       const clientData = req.body
@@ -122,11 +128,11 @@ class userController {
         .on('error', err => {
           console.error('Error fetching URL:', err)
         })
-        const newFriend = new friendModel({
-          _id: clientData._id,
-          data: []
-        })
-        newFriend.save()
+      const newFriend = new friendModel({
+        _id: clientData._id,
+        data: []
+      })
+      newFriend.save()
       groupHelper.createGroupUser(clientData._id)
       const newUser = await userModel.create(customData)
       res.status(200).json(newUser)
@@ -178,12 +184,38 @@ class userController {
 
   async handleUpdateBio(req, res) {
     const userID = req.params.id
-    userModel.findByIdAndUpdate(userID, {bio: req.body.value}).then(data => {
-      res.status(200).json(RESPONSE_STATUS.SUCCESS)
-    }).catch(error => {
-      console.log('error when update bio: ', error)
-      res.status(500).json(RESPONSE_STATUS.ERROR)
-    })
+    userModel
+      .findByIdAndUpdate(userID, { bio: req.body.value })
+      .then(data => {
+        res.status(200).json(RESPONSE_STATUS.SUCCESS)
+      })
+      .catch(error => {
+        console.log('error when update bio: ', error)
+        res.status(500).json(RESPONSE_STATUS.ERROR)
+      })
+  }
+
+  async handleUpdateAvatar(req, res) {
+    const userID = req.params.id
+   const {current, avatar} = req.body
+    const [relativeFilePaths, staticFilePaths, dirPath] = helper.getUploadFileAndFolderPath(
+      __dirname,
+      FOLDER_NAME.USERS,
+      userID,
+      [{ type: POST_ATTACHMENT.IMAGE }]
+    )
+  
+    helper.storeMultiFile(staticFilePaths, dirPath, [{type: POST_ATTACHMENT.IMAGE, source: avatar}])
+    helper.deleteFileFromRelativeFilePath(current)
+    userModel
+      .findByIdAndUpdate(userID, { avatar:relativeFilePaths[0].source })
+      .then(data => {
+        res.status(200).json(RESPONSE_STATUS.SUCCESS)
+      })
+      .catch(error => {
+        console.log('error when update avatar: ', error)
+        res.status(500).json(RESPONSE_STATUS.ERROR)
+      })
   }
 }
 

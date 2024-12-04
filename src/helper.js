@@ -45,6 +45,24 @@ const storeMultiFile = async (staticFilePaths, dirPath, filesData) => {
   })
 }
 
+//
+const getStaticFilePathFromRelateFilePath = (filepath) => {
+  const dirPath = path.join(__dirname, '/public/' + filepath)
+  return dirPath
+}
+
+const deleteFileFromRelativeFilePath = (filepath) => {
+  const staticFilePath = getStaticFilePathFromRelateFilePath(filepath)
+  fs.rm(staticFilePath, error => {
+    if(error) {
+      console.log('error when deleteFile from relative filePath in helper.js: ', error)
+      return
+    }
+    console.log('delete file successfully')
+  })
+}
+
+
 //path don't include folder_type: /video/file_name.ext
 const getUploadFolderPath = (__dirname, folderType, folderID) => {
   const relativePath = `uploads/${folderType}/${folderID}/`
@@ -79,11 +97,21 @@ const removeVietnameseTones = (str) => {
 };
 
 
+const relativeImage = {
+  avatar_null: '/uploads/static/avatar_null.png',
+  convention_group: '/uploads/static/groupchat.png',
+  group_background: '/uploads/static/group.png'
+}
+
+
 const helper = {
   storeFile,
   storeMultiFile,
   getUploadFolderPath,
   getUploadFileAndFolderPath,
+  getStaticFilePathFromRelateFilePath,
+  deleteFileFromRelativeFilePath,
+  relativeImage,
   removeVietnameseTones
 }
 module.exports = helper

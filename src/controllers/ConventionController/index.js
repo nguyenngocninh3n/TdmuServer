@@ -2,18 +2,23 @@ const conventionModel = require('../../models/convention.model')
 const UserController = require('../UserController')
 const path = require('path')
 const fs = require('fs')
+const mongoose = require('mongoose')
 const { type } = require('os')
 const {
   MESSAGE_TYPE,
   MESSAGE_NOTIFY_TYPE,
   MESSAGE_ACTION,
-  RESPONSE_STATUS
+  RESPONSE_STATUS,
+  MEMBER_CONVENTION_STATUS,
+  FOLDER_NAME,
+  POST_ATTACHMENT
 } = require('../../utils/constants')
 const { error } = require('console')
+const helper = require('../../helper')
+const { obj } = require('../../models/chatData.convention.model')
 
 const handleConventionChange = () => {
-  conventionModel.watch().on('change', data => {
-  })
+  conventionModel.watch().on('change', data => {})
 }
 
 const handleStoreTextMessage = ({ conventionID, data, res }) => {
@@ -48,8 +53,17 @@ const handleStoreUploadFileMessage = ({ conventionID, data, res }) => {
       }
     )
     .then(newData => {
-      const {senderID, _id, userName, type, message, createdAt, updatedAt} = newData.data.at(-1)
-      res.status(200).json({senderID, _id, userName, message, createdAt, updatedAt, type, notify: data?.notify})
+      const { senderID, _id, userName, type, message, createdAt, updatedAt } = newData.data.at(-1)
+      res.status(200).json({
+        senderID,
+        _id,
+        userName,
+        message,
+        createdAt,
+        updatedAt,
+        type,
+        notify: data?.notify
+      })
     })
     .catch(error => {
       console.log('error when store notify message: ', error)
@@ -62,8 +76,7 @@ const handleUpdateAvatarConvention = ({ conventionID, path }) => {
     .findByIdAndUpdate(conventionID, {
       avatar: path
     })
-    .then(newData => {
-    })
+    .then(newData => {})
     .catch(error => {
       console.log('error when update avatar convention: ', error)
     })
@@ -168,7 +181,7 @@ class ConventionController {
     const { id } = req.params
     conventionModel
       .find({ uids: id })
-      .sort({'updatedAt':'desc'})
+      .sort({ updatedAt: 'desc' })
       .then(data => {
         res.json(data)
       })
@@ -180,18 +193,103 @@ class ConventionController {
 
   storeGroupConvention = async (req, res) => {
     const data = req.body
-    conventionModel.create({
-      uids: data.uids,
-      members: data.members,
-      data: [data.message],
-      type: data.type,
-      name: 'Chat nhóm'
-    }).then(data => {
-      res.status(200).json(RESPONSE_STATUS.SUCCESS)
-    }) .catch(error => {
-      console.log('error when store group convention: ', error)
-      res.status(500).json({ error })
+    const objectId = new mongoose.Types.ObjectId()
+    console.log('object id: ', objectId)
+    const [relativePath, dirPath] = helper.getUploadFolderPath(
+      __dirname,
+      FOLDER_NAME.CONVENTIONS,
+      objectId.toString()
+    )
+    console.log('dirpath: ', dirPath + FOLDER_NAME.IMAGE + '/')
+   
+    const relativeRawFilePath = '/uploads/static/groupchat.png'
+    const staticRawFilePath = path.join(__dirname, '../../public/' + relativeRawFilePath)
+    const fileName = Math.random().toString() + '.png'
+    const customTailPath = FOLDER_NAME.IMAGE + '/' + fileName
+    
+    await fs.mkdir(dirPath + FOLDER_NAME.IMAGE + '/',{ recursive: true }, error => {
+      if (error) {
+        console.log('Folder was existed ', error)
+        return
+      }
+      console.log('create folder successfully')
+       fs.copyFile(staticRawFilePath, dirPath + customTailPath, error => {
+        if (error) {
+          console.log('Lỗi khi copy file avatar group: ', error)
+          return
+        }
+        console.log('copy avatar group successfully')
+      })
     })
+   
+    conventionModel
+      .create({
+        _id: objectId,
+        uids: data.uids,
+        members: data.members,
+        data: [data.message],
+        type: data.type,
+        name: data.name,
+        avatar: relativePath + customTailPath
+      })
+      .then(data => {
+        res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
+      })
+      .catch(error => {
+        console.log('error when store group convention: ', error)
+        res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: error })
+      })
+  }
+
+  addMemberToGroup = async (req, res) => {
+    const conventionID = req.params.conventionID
+    const { uids, members, message } = req.body
+    // console.log('data received in add member to group: ', req.body)
+    console.log('MEMBERs: ', members)
+    console.log('uids: ', uids)
+    console.log('message: ', message)
+
+    await conventionModel.updateOne(
+      { _id: conventionID },
+      {
+        $pull: { members: { _id: { $in: uids } } }
+      }
+    )
+
+    conventionModel
+      .updateOne(
+        { _id: conventionID },
+        {
+          $push: { members: { $each: members }, uids: { $each: uids }, data: message }
+        },
+        { returnDocument: 'after' }
+      )
+      .then(data => {
+        res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
+      })
+      .catch(error => {
+        console.log('error when add member to group: ', error)
+        res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: error })
+      })
+  }
+
+  logOutGroup = async (req, res) => {
+    const { conventionID, userID } = req.params
+    const member = req.body
+    console.log('into logout group: ', conventionID, ' ', userID)
+    conventionModel
+      .findByIdAndUpdate(conventionID, { $pull: { uids: userID } })
+      .updateOne(
+        { _id: conventionID, 'members._id': userID }, // Tìm tài liệu và đối tượng trong mảng
+        { $set: { 'members.$.status': MEMBER_CONVENTION_STATUS.INACTIVE } } // Cập nhật thuộc tính
+      )
+      .then(data => {
+        res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
+      })
+      .catch(error => {
+        console.log('error when logout group: ', error)
+        res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: error })
+      })
   }
 
   storeConvention = async (req, res) => {
@@ -331,8 +429,7 @@ class ConventionController {
       const { userID, newState } = req.body
       handleUpdateNickName({ conventionID, userID, newState })
       handleStoreTextMessage({ conventionID, data: customData, res })
-    }
-    else if (
+    } else if (
       data.type === MESSAGE_TYPE.NOTIFY &&
       data?.notify?.type === MESSAGE_NOTIFY_TYPE.CHANGE_CONVENTION_NAME
     ) {
@@ -342,10 +439,11 @@ class ConventionController {
         message: data.customMessage
       }
       const { userID, newState } = req.body
-      conventionModel.findByIdAndUpdate(conventionID,{name: data.notify.value}).then(data => console.log('data after upload name convention: ', data))
+      conventionModel
+        .findByIdAndUpdate(conventionID, { name: data.notify.value })
+        .then(data => console.log('data after upload name convention: ', data))
       handleStoreTextMessage({ conventionID, data: customData, res })
-    }
-    else {
+    } else {
       const imagePath = []
       let fileNameType = ''
       let pathFolderType = ''
@@ -388,7 +486,7 @@ class ConventionController {
           notify: {
             type: MESSAGE_NOTIFY_TYPE.CHANGE_AVATAR,
             value: imagePath.at(0)
-          },
+          }
         }
         handleUpdateAvatarConvention({ conventionID, path: imagePath.at(0) })
         handleStoreUploadFileMessage({ conventionID, data: customData, res })

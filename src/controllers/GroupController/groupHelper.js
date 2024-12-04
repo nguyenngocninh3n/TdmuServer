@@ -269,7 +269,7 @@ const storeGroupMember = async (groupID, role, status, userData) => {
 const createGroup = async (name, bio, scope) => {
   const searchName = helper.removeVietnameseTones(name)
   const newGroup = await groupModel
-    .create({ name, bio, scope, searchName })
+    .create({ name, bio, scope, searchName, avatar:helper.relativeImage.group_background })
     .then(data => {
       return { status: RESPONSE_STATUS.SUCCESS, data: data }
     })
