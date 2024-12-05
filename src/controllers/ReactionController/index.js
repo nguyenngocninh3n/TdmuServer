@@ -20,6 +20,7 @@ class ReactionController {
 
   async getReactionOfUserByTargetID(req, res) {
     const { targetID, userID } = req.params
+    console.log('into get reaction of user by targetID: ', targetID, ' ', userID)
     reactionModel
       .findOne({ targetID, userID })
       .then(data => {
@@ -55,7 +56,9 @@ class ReactionController {
                                 senderAvatar: avatar,
                                 body: `${userName} đã thích bài viết của bạn`,
                                 title: 'Một lượt thích mới!',
-                                type: TYPE_SCREEN.POST
+                                type: TYPE_SCREEN.POST,
+                                ownerID: response.userID,
+                                targetID: targetID
                               })
                               fcmNotify.sendNotification(userInfo.fcmToken, data)
                         })

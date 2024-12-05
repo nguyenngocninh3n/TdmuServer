@@ -11,11 +11,15 @@ const {
   RESPONSE_STATUS,
   MEMBER_CONVENTION_STATUS,
   FOLDER_NAME,
-  POST_ATTACHMENT
+  POST_ATTACHMENT,
+  TYPE_SCREEN
 } = require('../../utils/constants')
 const { error } = require('console')
 const helper = require('../../helper')
 const { obj } = require('../../models/chatData.convention.model')
+const { createNotifyData } = require('../../notify/fcmNotify')
+const userModel = require('../../models/user.model')
+const fcmNotify = require('../../notify/fcmNotify')
 
 const handleConventionChange = () => {
   conventionModel.watch().on('change', data => {})
@@ -33,7 +37,29 @@ const handleStoreTextMessage = ({ conventionID, data, res }) => {
       }
     )
     .then(newData => {
+     
       res.json(newData.data.at(-1))
+      const senderInfo = newData.members.find(item => item._id === data.senderID)
+      const customTitle =  newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
+      const customName = senderInfo.aka || senderInfo.userName
+      console.log('customName: ', customName)
+      const newNotify = createNotifyData({
+        targetID:conventionID,
+        title:'Tin nhắn mới từ ' + customTitle,
+        body: customName  + ': ' + data.message,
+        senderID: senderInfo._id,
+        senderName: customName,
+        channelID:  conventionID,
+        type: TYPE_SCREEN.CONVENTION
+      })
+      console.log('title in newNotify: ', newData.name, ' senderInfo: ', senderInfo)
+      newData.members.forEach(item => {
+        item._id !== data.senderID && userModel.findById(item._id).then(response => {
+          newNotify.ownerID = item._id
+          newNotify.senderAvatar = response.avatar
+          fcmNotify.sendNotification(response.fcmToken, newNotify )
+        })
+      })
     })
     .catch(error => {
       console.log('error when store text message: ', error)
@@ -64,7 +90,32 @@ const handleStoreUploadFileMessage = ({ conventionID, data, res }) => {
         type,
         notify: data?.notify
       })
+
+      const senderInfo = newData.members.find(item => item._id === data.senderID)
+      const customTitle =  newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
+      const customName = senderInfo.aka || senderInfo.userName
+      console.log('customName: ', customName)
+     
+      const customType = newData.data.at(-1).type === 'IMAGE' ? ' hình ảnh' : ' video'
+      const newNotify = createNotifyData({
+        targetID:conventionID,
+        title:'Tin nhắn mới từ ' + customTitle,
+        body: customName  + ': ' + 'Đã gửi ' + newData.data.at(-1).message.split(',').length + customType,
+        senderName: customName,
+        senderID: data.senderID,
+        senderAvatar: senderInfo.avatar,
+        channelID:  conventionID,
+        type: TYPE_SCREEN.CONVENTION
+      })
+      newData.members.forEach(item => {
+        item._id !== data.senderID && userModel.findById(item._id).then(response => {
+          newNotify.ownerID = item._id
+          fcmNotify.sendNotification(response.fcmToken, newNotify )
+        })
+      })
+
     })
+
     .catch(error => {
       console.log('error when store notify message: ', error)
       res.json({ error })
@@ -415,6 +466,7 @@ class ConventionController {
     const data = req.body
     const { senderID, message } = data
     const conventionID = req.params.id
+ 
     if (data.type === MESSAGE_TYPE.TEXT) {
       handleStoreTextMessage({ conventionID, data, res })
     } else if (
