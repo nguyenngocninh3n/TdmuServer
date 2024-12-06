@@ -41,6 +41,9 @@ SocketServer.runSocketServer(server)
 //firebase cloud messaging
 const admin = require('firebase-admin');
 const serviceAccount = require('./config/server-account-key.json');
+const { detectImage } = require('./examples')
+const { detecting } = require('./examples/detect')
+const { detectLabel } = require('./examples/detect copy')
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
@@ -48,4 +51,7 @@ admin.initializeApp({
 
 server.listen(PORT, HOST,  () => {
   console.log(`Server is running on: http://${HOST}:${PORT}`)
+  // detectImage()
+  // detecting()
+  // detectLabel()
 })

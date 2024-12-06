@@ -13,6 +13,7 @@ const { getStatusFriend } = require('../FriendController')
 const friendHelper = require('../FriendController/friendHelper')
 const UserController = require('../UserController')
 const userHelper = require('../UserController/userHelper')
+const { getNewFeedPosts } = require('./postMethod')
 
 const handleSavedAndGetAttachments = (userID, attachments, custom) => {
   const [relativeFilePaths, staticFilePaths, dirPath] = helper.getUploadFileAndFolderPath(
@@ -62,6 +63,13 @@ class PostController {
         })
       })
   }
+
+  async handleGetNewFeedPostsByUserID(req, res) {
+    const {userID} = req.params
+    console.log('into handleGetNewFeedPostsByUserID: ', userID) 
+      const data = await getNewFeedPosts(userID)
+      res.status(200).json(data)
+    }
 
   async handleGetUserPosts(req, res) {
     const {userID, ownerID} = req.query

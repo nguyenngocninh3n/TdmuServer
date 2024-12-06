@@ -2,6 +2,7 @@ const express = require('express')
 const PostController = require('../controllers/PostController')
 const postRouter = express.Router()
 
+postRouter.get('/newfeed/:userID', PostController.handleGetNewFeedPostsByUserID)
 postRouter.get('/user', PostController.handleGetUserPosts)
 postRouter.get('/:id/', PostController.handleGetPost)
 

@@ -15,7 +15,7 @@ const getFriendStatus = async (ownerID, userID) => {
 
 const getListFriendsID = async (userID) => {
   const response = await friendModel.findById(userID).then(data => {
-    const customData = {_id: data._id, data: data.data.filter(item => item.status === FRIEND_STATUS.FRIEND)}
+    const customData = {_id: data._id, data: data.data.filter(item => item.status === FRIEND_STATUS.FRIEND).map(item => item._id)}
     return {status: RESPONSE_STATUS.SUCCESS, data: customData}
   }).catch(error => {
     console.log('errror get list friends id in friendHelper: ', error)
