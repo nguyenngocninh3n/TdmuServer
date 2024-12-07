@@ -12,7 +12,8 @@ const {
   MEMBER_CONVENTION_STATUS,
   FOLDER_NAME,
   POST_ATTACHMENT,
-  TYPE_SCREEN
+  TYPE_SCREEN,
+  NOTIFY_CONVENTION_STATUS
 } = require('../../utils/constants')
 const { error } = require('console')
 const helper = require('../../helper')
@@ -37,28 +38,31 @@ const handleStoreTextMessage = ({ conventionID, data, res }) => {
       }
     )
     .then(newData => {
-     
       res.json(newData.data.at(-1))
       const senderInfo = newData.members.find(item => item._id === data.senderID)
-      const customTitle =  newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
+      const customTitle = newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
       const customName = senderInfo.aka || senderInfo.userName
-      console.log('customName: ', customName)
       const newNotify = createNotifyData({
-        targetID:conventionID,
-        title:'Tin nhắn mới từ ' + customTitle,
-        body: customName  + ': ' + data.message,
+        targetID: conventionID,
+        title: 'Tin nhắn mới từ ' + customTitle,
+        body: customName + ': ' + data.message,
         senderID: senderInfo._id,
         senderName: customName,
-        channelID:  conventionID,
+        channelID: conventionID,
         type: TYPE_SCREEN.CONVENTION
       })
-      console.log('title in newNotify: ', newData.name, ' senderInfo: ', senderInfo)
       newData.members.forEach(item => {
-        item._id !== data.senderID && userModel.findById(item._id).then(response => {
-          newNotify.ownerID = item._id
-          newNotify.senderAvatar = response.avatar
-          fcmNotify.sendNotification(response.fcmToken, newNotify )
-        })
+        const checkAllowNotify = item.notify === NOTIFY_CONVENTION_STATUS.ALLOW || item.notify === NOTIFY_CONVENTION_STATUS.CUSTOM && Date.now() > Date.parse(item.upto)
+        console.log('check allow notify: ', item._id, ' ',  checkAllowNotify)
+        if(checkAllowNotify && item._id !== data.senderID) {
+          console.log('notify to: ', item.userName)
+          userModel.findById(item._id).then(response => {
+            newNotify.ownerID = item._id
+            newNotify.senderAvatar = response.avatar
+            fcmNotify.sendNotification(response.fcmToken, newNotify)
+          })
+        } 
+         
       })
     })
     .catch(error => {
@@ -92,28 +96,34 @@ const handleStoreUploadFileMessage = ({ conventionID, data, res }) => {
       })
 
       const senderInfo = newData.members.find(item => item._id === data.senderID)
-      const customTitle =  newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
+      const customTitle = newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
       const customName = senderInfo.aka || senderInfo.userName
       console.log('customName: ', customName)
-     
+
       const customType = newData.data.at(-1).type === 'IMAGE' ? ' hình ảnh' : ' video'
       const newNotify = createNotifyData({
-        targetID:conventionID,
-        title:'Tin nhắn mới từ ' + customTitle,
-        body: customName  + ': ' + 'Đã gửi ' + newData.data.at(-1).message.split(',').length + customType,
+        targetID: conventionID,
+        title: 'Tin nhắn mới từ ' + customTitle,
+        body:
+          customName +
+          ': ' +
+          'Đã gửi ' +
+          newData.data.at(-1).message.split(',').length +
+          customType,
         senderName: customName,
         senderID: data.senderID,
         senderAvatar: senderInfo.avatar,
-        channelID:  conventionID,
+        channelID: conventionID,
         type: TYPE_SCREEN.CONVENTION
       })
       newData.members.forEach(item => {
-        item._id !== data.senderID && userModel.findById(item._id).then(response => {
-          newNotify.ownerID = item._id
-          fcmNotify.sendNotification(response.fcmToken, newNotify )
-        })
+        const checkAllowNotify = item.notify === NOTIFY_CONVENTION_STATUS.ALLOW || item.notify === NOTIFY_CONVENTION_STATUS.CUSTOM && Date.now() > Date.parse(item.upto)
+        checkAllowNotify && item._id !== data.senderID && 
+          userModel.findById(item._id).then(response => {
+            newNotify.ownerID = item._id
+            fcmNotify.sendNotification(response.fcmToken, newNotify)
+          })
       })
-
     })
 
     .catch(error => {
@@ -252,19 +262,19 @@ class ConventionController {
       objectId.toString()
     )
     console.log('dirpath: ', dirPath + FOLDER_NAME.IMAGE + '/')
-   
+
     const relativeRawFilePath = '/uploads/static/groupchat.png'
     const staticRawFilePath = path.join(__dirname, '../../public/' + relativeRawFilePath)
     const fileName = Math.random().toString() + '.png'
     const customTailPath = FOLDER_NAME.IMAGE + '/' + fileName
-    
-    await fs.mkdir(dirPath + FOLDER_NAME.IMAGE + '/',{ recursive: true }, error => {
+
+    await fs.mkdir(dirPath + FOLDER_NAME.IMAGE + '/', { recursive: true }, error => {
       if (error) {
         console.log('Folder was existed ', error)
         return
       }
       console.log('create folder successfully')
-       fs.copyFile(staticRawFilePath, dirPath + customTailPath, error => {
+      fs.copyFile(staticRawFilePath, dirPath + customTailPath, error => {
         if (error) {
           console.log('Lỗi khi copy file avatar group: ', error)
           return
@@ -272,7 +282,7 @@ class ConventionController {
         console.log('copy avatar group successfully')
       })
     })
-   
+
     conventionModel
       .create({
         _id: objectId,
@@ -466,7 +476,7 @@ class ConventionController {
     const data = req.body
     const { senderID, message } = data
     const conventionID = req.params.id
- 
+
     if (data.type === MESSAGE_TYPE.TEXT) {
       handleStoreTextMessage({ conventionID, data, res })
     } else if (
@@ -551,6 +561,27 @@ class ConventionController {
         handleStoreUploadFileMessage({ conventionID, data: customData, res })
       }
     }
+  }
+
+  updateNotifySettings = async (req, res) => {
+    const { userID, conventionID, status, upto } = req.body
+    conventionModel
+      .updateOne(
+        { _id: conventionID, 'members._id': userID },
+        {
+          $set: {
+            'members.$.notify': status,
+            'members.$.upto': upto
+          }
+        }
+      )
+      .then(data => {
+        res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
+      })
+      .catch(error => {
+        console.log('error when update notify convention : ', error)
+        res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: error })
+      })
   }
 }
 // handleConventionChange()
