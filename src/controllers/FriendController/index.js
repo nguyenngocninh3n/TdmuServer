@@ -5,6 +5,7 @@ const UserController = require('../UserController')
 const userHelper = require('../UserController/userHelper')
 const {} = require('../../notify/fcmNotify')
 const fcmNotify = require('../../notify/fcmNotify')
+const friendHelper = require('./friendHelper')
 
 const helper = {
   createFriend: async (ownerID, userID, status) => {
@@ -202,6 +203,35 @@ class FriendController {
             res.status(500).json('status in updatestatus friend invalid')
         }
     }
+  }
+
+  async getSuggestFriend(req, res) {
+    const userID = req.params.userID
+    friendHelper.getSuggestFriend(userID).then(response => res.status(200).json(response))
+  }
+
+  async getRequestFriends(req, res) {
+    const userID = req.params.userID
+    friendHelper.getRequestFriends(userID).then(response => res.status(200).json(response))
+  }
+
+  async getPendingFriends(req, res) {
+    const userID = req.params.userID
+    friendHelper.getPendingFriends(userID).then(response => res.status(200).json(response))
+  }
+
+
+  async removeSuggestFriend(req, res) {
+    const {ownerID, userID} = req.params
+    console.log('into removeSuggestFriend: ', ownerID, ' ', userID)
+    friendHelper.removeSuggestFriend(ownerID, userID).then(response => {
+      if(response.status === RESPONSE_STATUS.SUCCESS) {
+        res.status(200).json(response)
+      } else {
+        res.status(500).json(response)
+
+      }
+    })
   }
 }
 
