@@ -35,18 +35,19 @@ class ReactionController {
   async updateReactionOfUserByTargetID(req, res) {
     const { targetID, userID, userName, avatar, status } = req.body
     const type = req.body?.type ?? REACTION_TYPE.POST
-    console.log('into update reaction: ', req.body)
+    console.log('into update reaction: ', targetID)
     reactionModel
       .findOne({ targetID, userID })
       .then(data => {
         if (data) {
-          const status = data.status
           data
             .updateOne({ status: !status }, { returnDocument: 'before' })
             .then(data => {
                 res.status(200).json({ ...data, status: !status })
                 if (type === REACTION_TYPE.POST && !status) {
-                    postModel.findById(targetID).then(response => {
+                  console.log('like post')
+                  
+                    postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: 1}}, {returnDocument: 'after'}).then(response => {
                       if (response.userID !== userID) {
                         userHelper.getUserDataById(response.userID).then( userInfo => {
                             const data = fcmNotify.createNotifyData({
@@ -64,6 +65,9 @@ class ReactionController {
                         })
                       }
                     })
+                  } else if(type === REACTION_TYPE.POST && status) {
+                    console.log('unlike post')
+                    postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: -1}}, {returnDocument: 'after'}).then(result => result)
                   }
         })
         } else {
@@ -80,7 +84,7 @@ class ReactionController {
             .then(data => {
               res.status(200).json(data)
               if (data.type === REACTION_TYPE.POST) {
-                postModel.findById(targetID).then(response => {
+                postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: 1}}, {returnDocument: 'after'}).then(response => {
                     if (response.userID !== userID) {
                         userHelper.getUserDataById(response.userID).then( userInfo => {
                             const data = fcmNotify.createNotifyData({

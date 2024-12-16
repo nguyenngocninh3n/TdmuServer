@@ -51,6 +51,9 @@ const runSocketServer = server => {
       })
     })
 
+
+
+    // JOIN ROOM
     client.on('joinChatRoom', data => {
       client.join(data)
     })
@@ -62,6 +65,7 @@ const runSocketServer = server => {
 
     client.on('exitRooms', data => {
       data.forEach(item => {
+        console.log('exit rooms: ', item)
         client.rooms.delete(item)
       })
     })
@@ -104,6 +108,8 @@ const runSocketServer = server => {
       })
     })
 
+
+
     // POLL ACTION
     client.on('addPolling', data => {
       const targetID = data.targetID
@@ -117,6 +123,16 @@ const runSocketServer = server => {
       console.info('listen update Polling in server: ', data.targetID)
 
       io.in(data.targetID).emit('client_updatePolling', customData)
+    })
+
+
+
+    // REACTION ACTION
+    client.on('reaction', data => {
+      const {type, targetID, status } = data
+      const event_name = type + 'reaction'
+      console.log('server listen reaction event: ', data)
+      io.in(targetID).emit(event_name, {postID:targetID, number: status ? -1 : 1 })
     })
   })
 }

@@ -15,8 +15,8 @@ const postModal = new Schema(
     scope: {type: String, default: SCOPE.PUBLIC},
     status: {type: String, default: POST_STATUS.ACTIVE},
     sharesCount: {type: Number, default: null},
-    reactionsCount: {type: Number, default: null},
-    commentsCount: {type: Number, default: null},
+    reactionsCount: {type: Number, default: 0},
+    commentsCount: {type: Number, default: 0},
     pollID: mongoose.Types.ObjectId
   },
   { timestamps: true }

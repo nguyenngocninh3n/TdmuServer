@@ -30,10 +30,11 @@ const getUserPosts = async (userID, ownerID, status) => {
  
   const queyObj = {
     userID: userID,
-    status: status
+    status: status,
+    
   }
   if (ownerID === userID) {
-    const posts = await postModel.find(queyObj).sort({ createdAt: 'desc' })
+    const posts = await postModel.find({...queyObj, groupID: null}).sort({ createdAt: 'desc' })
     return posts
   } else {
     const friendStatus = await friendHelper.getFriendStatus(ownerID, userID)
@@ -71,30 +72,21 @@ class PostController {
       res.status(200).json(data)
     }
 
+
   async handleGetUserPosts(req, res) {
     const {userID, ownerID} = req.query
     console.log('query: ', req.query)
-    console.log('userID vaf ownerID: ', userID, ' ', ownerID)
-    console.log(1)
-    const userData = await  userHelper.getUserDataById(userID)
-    const posts = await getUserPosts(userID, ownerID, POST_STATUS.ACTIVE)
-    console.log(2)
-    if (userData && posts) {
+    await getUserPosts(userID, ownerID, POST_STATUS.ACTIVE).then(response => {
       const customData = {
-        code: RESPONSE_STATUS.SUCCESS,
-        userID: userData._id,
-        userName: userData.userName,
-        userAvatar: userData.avatar,
-        data: posts
+        status: RESPONSE_STATUS.SUCCESS,
+        data: response
       }
-      console.log(3)
       res.status(200).json(customData)
-    } else {
-      console.log('error when get user posts: ')
-      res.status(500).json({
-        code: RESPONSE_STATUS.ERROR
-      })
-    }
+    })
+    .catch(error => {
+      console.log('error when handle get user posts: ', error)
+      res.status(500).json({error})
+    })
   }
 
   handleStorePost(req, res) {
