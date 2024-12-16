@@ -7,6 +7,7 @@ const ConventionController = require('../controllers/ConventionController')
 const FriendController = require('../controllers/FriendController')
 const fcmNotify = require('../notify/fcmNotify')
 const userHelper = require('../controllers/UserController/userHelper')
+const conventionHelper = require('../controllers/ConventionController/conventionHelper')
 
 const runSocketServer = server => {
   const io = new Server(server)
@@ -17,7 +18,7 @@ const runSocketServer = server => {
     client.on('connection', async data => {
       userData._id = data.data.userID
       await UserController.helper.handleActiveUser(userData._id)
-      const conventionIDs = await ConventionController.helper
+      const conventionIDs = await conventionHelper
         .handleGetConventionIDs(userData._id)
         .then(data => data.data)
       const friendIDs = await FriendController.helpers
@@ -59,6 +60,12 @@ const runSocketServer = server => {
       data.forEach(item => client.join(item))
     })
 
+    client.on('exitRooms', data => {
+      data.forEach(item => {
+        client.rooms.delete(item)
+      })
+    })
+
     client.on('convention', value => {
       const { conventionID } = value
       console.log('valie in on convention at server: ', value)
@@ -81,7 +88,7 @@ const runSocketServer = server => {
           console.log('user sender next: ', userSender)
           const newData = fcmNotify.createNotifyData({
             channelID: Math.random().toString(),
-            body: 'Cuộc gói đến từ ' + senderName ,
+            body: 'Cuộc gói đến từ ' + senderName,
             title: 'Cuộc gọi đến',
             senderName: senderName,
             senderAvatar: senderAvatar,
@@ -95,6 +102,21 @@ const runSocketServer = server => {
           fcmNotify.sendNotification(userSender.fcmToken, newData)
         })
       })
+    })
+
+    // POLL ACTION
+    client.on('addPolling', data => {
+      const targetID = data.targetID
+      const customData = { data: data.data, pollID: data.pollID }
+      console.log('listion add Polling in server: ', data)
+      io.to(targetID).emit('client_addPolling', customData)
+    })
+
+    client.on('updatePolling', data => {
+      const customData = { data: data.data, pollID: data.pollID }
+      console.info('listen update Polling in server: ', data.targetID)
+
+      io.in(data.targetID).emit('client_updatePolling', customData)
     })
   })
 }

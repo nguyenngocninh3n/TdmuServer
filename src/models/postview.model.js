@@ -10,4 +10,4 @@ const postview = new Schema(
   { timestamps: true }
 )
 
-module.exports = mongoose.model('Postview', postModal)
+module.exports = mongoose.model('Postview', postview)

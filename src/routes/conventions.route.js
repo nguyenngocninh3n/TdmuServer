@@ -19,4 +19,6 @@ router.post('/group/:conventionID/logout/:userID', ConventionController.logOutGr
 router.post('/:conventionID/notify', ConventionController.updateNotifySettings)
 router.post('/:id', ConventionController.storeMessage)
 
+
+
 module.exports = router

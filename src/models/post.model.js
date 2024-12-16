@@ -16,7 +16,8 @@ const postModal = new Schema(
     status: {type: String, default: POST_STATUS.ACTIVE},
     sharesCount: {type: Number, default: null},
     reactionsCount: {type: Number, default: null},
-    commentsCount: {type: Number, default: null}
+    commentsCount: {type: Number, default: null},
+    pollID: mongoose.Types.ObjectId
   },
   { timestamps: true }
 )

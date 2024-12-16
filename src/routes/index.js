@@ -7,7 +7,8 @@ const commentRouter = require('./comment.route')
 const reactionRouter = require('./reaction.route')
 const groupRouter = require('./group.route')
 const searchRouter = require('./search.route')
-
+const pollRouter = require('./poll.route')
+const postviewRouter = require('./postview.route')
 
 function routes(app) {
   app.use('/convention', conventionsRouter)
@@ -19,6 +20,8 @@ function routes(app) {
   app.use('/reaction', reactionRouter)
   app.use('/group', groupRouter)
   app.use('/search', searchRouter)
+  app.use('/poll', pollRouter )
+  app.use('/postview', postviewRouter)
   app.get('/home', (req, res) => res.send('This home'))
   app.get('/', (req, res) => res.json({ state: 'success' }))
 

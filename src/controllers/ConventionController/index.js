@@ -13,7 +13,8 @@ const {
   FOLDER_NAME,
   POST_ATTACHMENT,
   TYPE_SCREEN,
-  NOTIFY_CONVENTION_STATUS
+  NOTIFY_CONVENTION_STATUS,
+  POLL_STATUS
 } = require('../../utils/constants')
 const { error } = require('console')
 const helper = require('../../helper')
@@ -21,6 +22,8 @@ const { obj } = require('../../models/chatData.convention.model')
 const { createNotifyData } = require('../../notify/fcmNotify')
 const userModel = require('../../models/user.model')
 const fcmNotify = require('../../notify/fcmNotify')
+const pollModel = require('../../models/poll.model')
+const SocketServer = require('../../socket')
 
 const handleConventionChange = () => {
   conventionModel.watch().on('change', data => {})
@@ -42,6 +45,8 @@ const handleStoreTextMessage = ({ conventionID, data, res }) => {
       const senderInfo = newData.members.find(item => item._id === data.senderID)
       const customTitle = newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
       const customName = senderInfo.aka || senderInfo.userName
+      
+      // NOTIFICATION
       const newNotify = createNotifyData({
         targetID: conventionID,
         title: 'Tin nhắn mới từ ' + customTitle,
@@ -52,18 +57,22 @@ const handleStoreTextMessage = ({ conventionID, data, res }) => {
         type: TYPE_SCREEN.CONVENTION
       })
       newData.members.forEach(item => {
-        const checkAllowNotify = item.notify === NOTIFY_CONVENTION_STATUS.ALLOW || item.notify === NOTIFY_CONVENTION_STATUS.CUSTOM && Date.now() > Date.parse(item.upto)
-        console.log('check allow notify: ', item._id, ' ',  checkAllowNotify)
-        if(checkAllowNotify && item._id !== data.senderID) {
+        const checkAllowNotify =
+          item.notify === NOTIFY_CONVENTION_STATUS.ALLOW ||
+          (item.notify === NOTIFY_CONVENTION_STATUS.CUSTOM && Date.now() > Date.parse(item.upto))
+        console.log('check allow notify: ', item._id, ' ', checkAllowNotify)
+        if (checkAllowNotify && item._id !== data.senderID) {
           console.log('notify to: ', item.userName)
           userModel.findById(item._id).then(response => {
             newNotify.ownerID = item._id
             newNotify.senderAvatar = response.avatar
             fcmNotify.sendNotification(response.fcmToken, newNotify)
           })
-        } 
-         
+        }
       })
+
+
+      // POLL
     })
     .catch(error => {
       console.log('error when store text message: ', error)
@@ -117,8 +126,11 @@ const handleStoreUploadFileMessage = ({ conventionID, data, res }) => {
         type: TYPE_SCREEN.CONVENTION
       })
       newData.members.forEach(item => {
-        const checkAllowNotify = item.notify === NOTIFY_CONVENTION_STATUS.ALLOW || item.notify === NOTIFY_CONVENTION_STATUS.CUSTOM && Date.now() > Date.parse(item.upto)
-        checkAllowNotify && item._id !== data.senderID && 
+        const checkAllowNotify =
+          item.notify === NOTIFY_CONVENTION_STATUS.ALLOW ||
+          (item.notify === NOTIFY_CONVENTION_STATUS.CUSTOM && Date.now() > Date.parse(item.upto))
+        checkAllowNotify &&
+          item._id !== data.senderID &&
           userModel.findById(item._id).then(response => {
             newNotify.ownerID = item._id
             fcmNotify.sendNotification(response.fcmToken, newNotify)
@@ -476,10 +488,11 @@ class ConventionController {
     const data = req.body
     const { senderID, message } = data
     const conventionID = req.params.id
-
-    if (data.type === MESSAGE_TYPE.TEXT) {
+console.log('data into store message: ', data)
+    if (data.type === MESSAGE_TYPE.TEXT ||data.type === MESSAGE_TYPE.POLL) {
       handleStoreTextMessage({ conventionID, data, res })
-    } else if (
+    } 
+    else if (
       data.type === MESSAGE_TYPE.NOTIFY &&
       data?.notify?.type === MESSAGE_NOTIFY_TYPE.CHANGE_AKA
     ) {
@@ -491,7 +504,21 @@ class ConventionController {
       const { userID, newState } = req.body
       handleUpdateNickName({ conventionID, userID, newState })
       handleStoreTextMessage({ conventionID, data: customData, res })
-    } else if (
+    }
+    else if (
+      data.type === MESSAGE_TYPE.NOTIFY &&
+      data?.notify?.type === MESSAGE_NOTIFY_TYPE.POLL
+    ) {
+      const customData = {
+        senderID: data.senderID,
+        type: data.type,
+        message: data.customMessage
+      }
+    
+      handleStoreTextMessage({ conventionID, data: customData, res })
+    }
+
+    else if (
       data.type === MESSAGE_TYPE.NOTIFY &&
       data?.notify?.type === MESSAGE_NOTIFY_TYPE.CHANGE_CONVENTION_NAME
     ) {
@@ -583,6 +610,8 @@ class ConventionController {
         res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: error })
       })
   }
+
+
 }
 // handleConventionChange()
 module.exports = new ConventionController()
