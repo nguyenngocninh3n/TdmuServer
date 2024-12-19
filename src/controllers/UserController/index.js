@@ -7,6 +7,7 @@ const FriendController = require('../FriendController')
 const friendModel = require('../../models/friend.model')
 const groupHelper = require('../GroupController/groupHelper')
 const helper = require('../../helper')
+const friendSuggestModel = require('../../models/friend.suggest.model')
 const convertDataToUser = data => {
   const newUser = {
     _id: data._id,
@@ -133,6 +134,10 @@ class userController {
         data: []
       })
       newFriend.save()
+      friendSuggestModel.create({
+        _id: clientData._id,
+        suggested: []
+      })
       groupHelper.createGroupUser(clientData._id)
       const newUser = await userModel.create(customData)
       res.status(200).json(newUser)

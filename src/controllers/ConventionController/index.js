@@ -43,7 +43,7 @@ const handleStoreTextMessage = ({ conventionID, data, res }) => {
     .then(newData => {
       res.json(newData.data.at(-1))
       const senderInfo = newData.members.find(item => item._id === data.senderID)
-      const customTitle = newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
+      const customTitle = newData?.name?.trim() || senderInfo?.aka?.trim() || senderInfo.userName
       const customName = senderInfo.aka || senderInfo.userName
       
       // NOTIFICATION

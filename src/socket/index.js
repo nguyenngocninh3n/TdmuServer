@@ -134,6 +134,14 @@ const runSocketServer = server => {
       console.log('server listen reaction event: ', data)
       io.in(targetID).emit(event_name, {postID:targetID, number: status ? -1 : 1 })
     })
+
+
+    // COMMENT COUNT ACTION
+    client.on('comment_count', data => {
+      const {postID, number } = data
+      console.log('server listen reaction event: ', data)
+      io.in(postID).emit('comment_count', {postID, number })
+    })
   })
 }
 

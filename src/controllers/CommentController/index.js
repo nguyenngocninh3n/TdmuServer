@@ -26,17 +26,13 @@ class CommentController {
       .create(newComment)
       .then(async data => {
         res.status(200).json(data)
-        const post = await postModel.findById(data.postID)
-        console.log('check 1: ', data.userID, ' ', post.userID)
+        const post = await postModel.findByIdAndUpdate(data.postID, {$inc: {commentsCount: 1}}, {returnDocument:'after'}).then(response => response)
         if (data.userID !== post.userID) {
           const parentComment = data.parentID ? await commentModel.findById(data.parentID) : null
           const postOwner = await userModel.findById(post.userID)
           const group = post.groupID ? await groupModel.findById(post.groupID) : null
-          console.log('check 2: parentcomment: ', parentComment)
-          console.log('check 2: group: ', group)
 
           if (parentComment) {
-            console.log('check 3: ')
             const parentCommentOwner = await userModel.findById(parentComment.userID)
             const preMessage =
               parentCommentOwner._id === postOwner._id  ? 'bạn' : parentCommentOwner._id === data.userID
@@ -64,7 +60,6 @@ class CommentController {
                 : parentCommentOwner.fcmToken
             fcmNotify.sendNotification(targetToken, customData)
           } else if (!parentComment || parentComment.userID !== postOwner._id) {
-            console.log('check 4: ')
             const customMessage = group ? 'trong nhóm ' + group.name : ''
             const customData = fcmNotify.createNotifyData({
               channelID: data.postID + 'COMMENT',
@@ -75,7 +70,6 @@ class CommentController {
               title: 'Bình luận mới!',
               type: TYPE_SCREEN.POST
             })
-            console.log('value before send notify: ', customData)
             fcmNotify.sendNotification(postOwner.fcmToken, customData)
           }
         }
