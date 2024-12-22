@@ -8,9 +8,9 @@ const FriendController = require('../controllers/FriendController')
 const fcmNotify = require('../notify/fcmNotify')
 const userHelper = require('../controllers/UserController/userHelper')
 const conventionHelper = require('../controllers/ConventionController/conventionHelper')
-
+let io;
 const runSocketServer = server => {
-  const io = new Server(server)
+  io = new Server(server)
   var conventions = []
   io.on('connection', client => {
     var userData = { _id: '' }
@@ -70,6 +70,9 @@ const runSocketServer = server => {
       })
     })
 
+
+
+    // CONVENTION ACTION
     client.on('convention', value => {
       const { conventionID } = value
       console.log('valie in on convention at server: ', value)
@@ -108,7 +111,22 @@ const runSocketServer = server => {
       })
     })
 
+    client.on('changeConventionName', data => {
+      const {conventionID} = data
+      client.in(conventionID).emit('changeConventionName', data)
+    })
 
+    client.on('changeConventionAvatar', data => {
+      const {conventionID} = data
+      client.in(conventionID).emit('changeConventionAvatar', data)
+    })
+
+    client.on('changeConventionAka', data => {
+      const {conventionID} = data
+      client.in(conventionID).emit('changeConventionAka', data)
+    })
+
+    //
 
     // POLL ACTION
     client.on('addPolling', data => {
@@ -125,23 +143,34 @@ const runSocketServer = server => {
       io.in(data.targetID).emit('client_updatePolling', customData)
     })
 
-
-
     // REACTION ACTION
     client.on('reaction', data => {
-      const {type, targetID, status } = data
+      const { type, targetID, status } = data
       const event_name = type + 'reaction'
-      io.in(targetID).emit(event_name, {postID:targetID, number: status ? -1 : 1 })
+      io.in(targetID).emit(event_name, { postID: targetID, number: status ? -1 : 1 })
     })
-
 
     // COMMENT COUNT ACTION
     client.on('comment_count', data => {
-      const {postID, number } = data
-      io.in(postID).emit('comment_count', {postID, number })
+      const { postID, number } = data
+      io.in(postID).emit('comment_count', { postID, number })
     })
   })
 }
 
-const SocketServer = { runSocketServer }
+class instance  {
+  emitChangeConventionAka = (conventionID, userID, aka) => {
+    io.in(conventionID).emit('emitChangeConventionAka', {conventionID, userID, value: aka})
+  }
+
+  emitChangeConventionAvatar = (conventionID, avatar) => {
+    io.in(conventionID).emit('emitChangeConventionAvatar', {conventionID, value: avatar})
+  }
+
+  emitChangeConventionName = (conventionID, name) => {
+      io.in(conventionID).emit('emitChangeConventionName', {conventionID, value: name})
+  }
+}
+
+const SocketServer = { runSocketServer, instance: new instance() }
 module.exports = SocketServer

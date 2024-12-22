@@ -149,7 +149,9 @@ const handleUpdateAvatarConvention = ({ conventionID, path }) => {
     .findByIdAndUpdate(conventionID, {
       avatar: path
     })
-    .then(newData => {})
+    .then(newData => {
+      SocketServer.instance.emitChangeConventionAvatar(conventionID, path)
+    })
     .catch(error => {
       console.log('error when update avatar convention: ', error)
     })
@@ -165,7 +167,9 @@ const handleUpdateNickName = ({ conventionID, userID, newState }) => {
         }
       }
     )
-    .then(value => console.log('update biệt danh thành công'))
+    .then(value => {
+      SocketServer.instance.emitChangeConventionAka(conventionID,userID, newState)
+    })
     .catch(error => {
       console.log('error when update avatar convention: ', error)
     })
@@ -307,6 +311,31 @@ class ConventionController {
       })
       .then(data => {
         res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
+      //Send notification to members
+      const lastChat = data.data[0]
+      const senderData = data.members.at(-1)
+      const newNotify = createNotifyData({
+        targetID: data._id,
+        title: 'Tin nhắn mới từ ' + senderData.userName,
+        body: senderData.userName + ': ' + lastChat.message,
+        senderID: senderData._id,
+        senderName: senderData.userName,
+        senderAvatar: senderData.avatar,
+        channelID: data._id,
+        type: TYPE_SCREEN.CONVENTION,
+
+      })
+      console.log('data before send notify when create convention: ', newNotify)
+      data.members.forEach(item => {
+         if( item._id !== senderData._id) {
+          userModel.findById(item._id).then(response => {
+            newNotify.ownerID = item._id
+            console.log('create convention: send notify to: ', item.userName)
+            fcmNotify.sendNotification(response.fcmToken, newNotify)
+          })
+         }
+          
+      })
       })
       .catch(error => {
         console.log('error when store group convention: ', error)
@@ -407,6 +436,7 @@ class ConventionController {
         .save()
         .then(data => {
           res.json(data)
+          //Send notification to members
           const newNotify = createNotifyData({
             targetID: data._id,
             title: 'Tin nhắn mới từ ' + senderData.userName,
@@ -550,10 +580,11 @@ console.log('data into store message: ', data)
         type: data.type,
         message: data.customMessage
       }
-      const { userID, newState } = req.body
       conventionModel
         .findByIdAndUpdate(conventionID, { name: data.notify.value })
-        .then(data => console.log('data after upload name convention: ', data))
+        .then(response => {
+          SocketServer.instance.emitChangeConventionName(conventionID, data.notify.value )
+        })
       handleStoreTextMessage({ conventionID, data: customData, res })
     } else {
       const imagePath = []
