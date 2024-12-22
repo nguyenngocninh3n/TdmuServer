@@ -19,14 +19,14 @@ const sendNotification = async (fcmToken, data) => {
 
 const createNotifyData = ({ channelID, senderID, senderName, senderAvatar, title, body, type, targetID, ownerID, meetingId }) => {
   const data = {
-    channelID,
+    channelID: channelID.toString(),
     senderID,
     senderName,
     senderAvatar,
     title,
     body,
     type,
-    targetID: targetID ?? '',
+    targetID: targetID.toString() ?? '',
     ownerID: ownerID ?? '',
     meetingId: meetingId ?? ''
   }

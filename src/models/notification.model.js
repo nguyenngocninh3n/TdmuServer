@@ -1,29 +1,20 @@
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
-const NOTIFICATION_TYPE = {
-    POST_REACTION: 'POST_REACTION',
-    POST_COMMENT: '',
-    POST_TAG: '',
 
-    COMMENT_REACTION: '',
-    COMMENT_REPLY: '',
-    COMMENT_TAG: '',
-
-    FRIEND_REQUEST: '',
-    FRIEND_ACCEPT: '',
-
-    GROUP_REQUEST: '',
-    GROUP_ACCEPT: '',
-
-}
 
 const notificationModel = new Schema({
-    _id: mongoose.Schema.ObjectId,
-    targetID: mongoose.Types.ObjectId,
+    _id: String, //type+targetID
+    userID: String,
+    targetID: String,
     type: String,
     message: String,
-    number: Number,
-    userID: String,
-    avatar: String
+    number: {type: Number, default: 0},
+    status: {type: Boolean, default: false},
+    uids: {type:Array, default: []},
+    senderID: String,
+    senderName: String,
+    senderAvatar: String
 }, {timestamps: true})
+
+module.exports = mongoose.model('Notification', notificationModel)

@@ -407,6 +407,29 @@ class ConventionController {
         .save()
         .then(data => {
           res.json(data)
+          const newNotify = createNotifyData({
+            targetID: data._id,
+            title: 'Tin nhắn mới từ ' + senderData.userName,
+            body: senderData.userName + ': ' + message,
+            senderID: senderData._id,
+            senderName: senderData.userName,
+            senderAvatar: senderData.avatar,
+            channelID: data._id,
+            type: TYPE_SCREEN.CONVENTION,
+
+          })
+          console.log('data before send notify when create convention: ', newNotify)
+          data.members.forEach(item => {
+             if( item._id !== senderID) {
+              userModel.findById(item._id).then(response => {
+                newNotify.ownerID = item._id
+                console.log('create convention: send notify to: ', item.userName)
+                fcmNotify.sendNotification(response.fcmToken, newNotify)
+              })
+             }
+              
+          })
+          
         })
         .catch(error => {
           console.log(error)

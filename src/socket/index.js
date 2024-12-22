@@ -77,10 +77,10 @@ const runSocketServer = server => {
     })
 
     client.on('conventionStored', receivedData => {
-      console.log('prepare emit convention: ')
+      console.log('prepare emit convention: ', receivedData)
       const { uids, data, conventionID } = receivedData
       const orders = uids.filter(item => item !== data.senderID)
-      client.to(orders).emit('conventionStored', conventionID)
+      io.in(uids).emit('conventionStored', conventionID)
     })
 
     client.on('call', data => {
@@ -131,7 +131,6 @@ const runSocketServer = server => {
     client.on('reaction', data => {
       const {type, targetID, status } = data
       const event_name = type + 'reaction'
-      console.log('server listen reaction event: ', data)
       io.in(targetID).emit(event_name, {postID:targetID, number: status ? -1 : 1 })
     })
 
@@ -139,7 +138,6 @@ const runSocketServer = server => {
     // COMMENT COUNT ACTION
     client.on('comment_count', data => {
       const {postID, number } = data
-      console.log('server listen reaction event: ', data)
       io.in(postID).emit('comment_count', {postID, number })
     })
   })

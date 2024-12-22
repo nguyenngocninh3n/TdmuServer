@@ -9,6 +9,8 @@ const groupRouter = require('./group.route')
 const searchRouter = require('./search.route')
 const pollRouter = require('./poll.route')
 const postviewRouter = require('./postview.route')
+const chatgptRouter = require('./chatgpt.route')
+const notificationRouter = require('./notification.route')
 
 function routes(app) {
   app.use('/convention', conventionsRouter)
@@ -22,6 +24,8 @@ function routes(app) {
   app.use('/search', searchRouter)
   app.use('/poll', pollRouter )
   app.use('/postview', postviewRouter)
+  app.use('/chatgpt', chatgptRouter)
+  app.use('/notification', notificationRouter)
   app.get('/home', (req, res) => res.send('This home'))
   app.get('/', (req, res) => res.json({ state: 'success' }))
 

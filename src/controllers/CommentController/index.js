@@ -3,7 +3,8 @@ const groupModel = require('../../models/group.model')
 const postModel = require('../../models/post.model')
 const userModel = require('../../models/user.model')
 const fcmNotify = require('../../notify/fcmNotify')
-const { RESPONSE_STATUS, TYPE_SCREEN } = require('../../utils/constants')
+const { RESPONSE_STATUS, TYPE_SCREEN, NOTIFICATION_TYPE } = require('../../utils/constants')
+const notificationHelper = require('../NotificationController/notificationHelper')
 
 class CommentController {
   async handleGetComments(req, res) {
@@ -44,12 +45,13 @@ class CommentController {
                 ? 'bạn'
                 : postOwner.userName
             const customMessage = group ? ' trong nhóm ' + group.name : ''
+            const bodyMessage = `${data.userName} đã trả lời bình luận của ${preMessage} về  bài viết của ${midMessage} ${customMessage} `
             const customData = fcmNotify.createNotifyData({
               channelID: data.postID + 'COMMENT',
               senderID: data.userID,
               senderName: data.userName,
               senderAvatar: data.avatar,
-              body: `${data.userName} đã trả lời bình luận của ${preMessage} về  bài viết của ${midMessage} ${customMessage} `,
+              body: bodyMessage,
               title: 'Bình luận mới!',
               type: TYPE_SCREEN.POST
             })
@@ -59,6 +61,7 @@ class CommentController {
                 ? postOwner.fcmToken
                 : parentCommentOwner.fcmToken
             fcmNotify.sendNotification(targetToken, customData)
+            notificationHelper.addNotification(postOwner._id, newComment.postID,newComment.userID, NOTIFICATION_TYPE.POST_COMMENT, bodyMessage)
           } else if (!parentComment || parentComment.userID !== postOwner._id) {
             const customMessage = group ? 'trong nhóm ' + group.name : ''
             const customData = fcmNotify.createNotifyData({
@@ -71,6 +74,7 @@ class CommentController {
               type: TYPE_SCREEN.POST
             })
             fcmNotify.sendNotification(postOwner.fcmToken, customData)
+            notificationHelper.addNotification(postOwner._id, newComment.postID,newComment.userID, NOTIFICATION_TYPE.POST_COMMENT, `${data.userName} đã bình luận về bài viết của bạn ${customMessage}`)
           }
         }
       })

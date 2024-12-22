@@ -1,7 +1,8 @@
 const postModel = require('../../models/post.model')
 const reactionModel = require('../../models/reaction.model')
 const fcmNotify = require('../../notify/fcmNotify')
-const { RESPONSE_STATUS, REACTION_TYPE, TYPE_SCREEN } = require('../../utils/constants')
+const { RESPONSE_STATUS, REACTION_TYPE, TYPE_SCREEN, NOTIFICATION_TYPE } = require('../../utils/constants')
+const notificationHelper = require('../NotificationController/notificationHelper')
 const userHelper = require('../UserController/userHelper')
 
 class ReactionController {
@@ -64,10 +65,13 @@ class ReactionController {
                               fcmNotify.sendNotification(userInfo.fcmToken, data)
                         })
                       }
+                      notificationHelper.addNotification(response.userID, targetID, userID, NOTIFICATION_TYPE.POST_REACTION)
                     })
                   } else if(type === REACTION_TYPE.POST && status) {
                     console.log('unlike post')
-                    postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: -1}}, {returnDocument: 'after'}).then(result => result)
+                    postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: -1}}, {returnDocument: 'after'}).then(response => {
+                      notificationHelper.updatePostReactionNotification(NOTIFICATION_TYPE.POST_REACTION, targetID, -1)
+                    })
                   }
         })
         } else {
@@ -98,6 +102,8 @@ class ReactionController {
                               })
                               fcmNotify.sendNotification(userInfo.fcmToken, data)
                         })
+                        notificationHelper.addNotification(response.userID, response._id,userID, NOTIFICATION_TYPE.POST_REACTION )
+
                       }
                 })
               }
