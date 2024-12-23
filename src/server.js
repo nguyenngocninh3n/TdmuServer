@@ -44,14 +44,14 @@ const serviceAccount = require('./config/server-account-key.json');
 const { detectImage } = require('./examples')
 const { detecting } = require('./examples/detect')
 const { detectLabel } = require('./examples/detect copy')
+const { translate, translateText } = require('./controllers/vision')
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
 
-server.listen(PORT, HOST,  () => {
+
+server.listen(PORT, HOST,async  () => {
   console.log(`Server is running on: http://${HOST}:${PORT}`)
-  // detectImage()
-  // detecting()
-  // detectLabel()
+  await translateText('Hi every body')
 })

@@ -1,6 +1,7 @@
 const postModel = require('../../models/post.model')
 const reactionModel = require('../../models/reaction.model')
 const fcmNotify = require('../../notify/fcmNotify')
+const SocketServer = require('../../socket')
 const { RESPONSE_STATUS, REACTION_TYPE, TYPE_SCREEN, NOTIFICATION_TYPE } = require('../../utils/constants')
 const notificationHelper = require('../NotificationController/notificationHelper')
 const userHelper = require('../UserController/userHelper')
@@ -9,15 +10,17 @@ class ReactionController {
   async getReactionsByTargetID(req, res) {
     const { targetID } = req.params
     reactionModel
-      .findOne({ targetID })
+      .find({ targetID })
       .then(data => {
-        res.status(200).json(data)
+        res.status(200).json({status:RESPONSE_STATUS.SUCCESS, data: data})
       })
       .catch(error => {
         console.log('Error when get reactions by target id: ', error)
-        res.status(200).json(RESPONSE_STATUS.ERROR)
+        res.status(500).json({status: RESPONSE_STATUS.ERROR, data: error})
       })
   }
+
+  a
 
   async getReactionOfUserByTargetID(req, res) {
     const { targetID, userID } = req.params
@@ -49,6 +52,7 @@ class ReactionController {
                   console.log('like post')
                   
                     postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: 1}}, {returnDocument: 'after'}).then(response => {
+                      SocketServer.instance.emitReactionPostChange(targetID, response)
                       if (response.userID !== userID) {
                         userHelper.getUserDataById(response.userID).then( userInfo => {
                             const data = fcmNotify.createNotifyData({
@@ -70,6 +74,7 @@ class ReactionController {
                   } else if(type === REACTION_TYPE.POST && status) {
                     console.log('unlike post')
                     postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: -1}}, {returnDocument: 'after'}).then(response => {
+                      SocketServer.instance.emitReactionPostChange(targetID, response)
                       notificationHelper.updatePostReactionNotification(NOTIFICATION_TYPE.POST_REACTION, targetID, -1)
                     })
                   }
@@ -87,6 +92,7 @@ class ReactionController {
             })
             .then(data => {
               res.status(200).json(data)
+              SocketServer.instance.emitReactionPostChange(data._id, data)
               if (data.type === REACTION_TYPE.POST) {
                 postModel.findByIdAndUpdate(targetID, {$inc: {reactionsCount: 1}}, {returnDocument: 'after'}).then(response => {
                     if (response.userID !== userID) {

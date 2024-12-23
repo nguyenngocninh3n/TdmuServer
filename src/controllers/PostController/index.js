@@ -1,5 +1,6 @@
 const helper = require('../../helper')
 const postModel = require('../../models/post.model')
+const SocketServer = require('../../socket')
 const {
   RESPONSE_STATUS,
   FOLDER_NAME,
@@ -7,12 +8,14 @@ const {
   FILE_EXT,
   POST_ACTION,
   POST_STATUS,
-  SCOPE
+  SCOPE,
+  MESSAGE_TYPE
 } = require('../../utils/constants')
 const { getStatusFriend } = require('../FriendController')
 const friendHelper = require('../FriendController/friendHelper')
 const UserController = require('../UserController')
 const userHelper = require('../UserController/userHelper')
+const { tagImage, tagVideo } = require('../vision')
 const { getNewFeedPosts } = require('./postMethod')
 
 const handleSavedAndGetAttachments = (userID, attachments, custom) => {
@@ -89,12 +92,18 @@ class PostController {
     })
   }
 
-  handleStorePost(req, res) {
+  async handleStorePost(req, res) {
     const data = req.body
     console.log(
       'attachment in store post: ', data.scope
     )
     const newAttachments = handleSavedAndGetAttachments(data.userID, data.attachments, data.groupID ? 'groups/' + data.groupID.toString() +'/' : null)
+    for(let item in newAttachments) {
+      if(item.type === MESSAGE_TYPE.VIDEO) {
+        const labels = await tagVideo(helper.getStaticFilePathFromRelateFilePath(item.source))
+        console.log('labels video: ', labels)
+      }
+    }
     const newPost = new postModel({
      ...data,
       attachments: newAttachments
@@ -103,6 +112,8 @@ class PostController {
       .save()
       .then(result => {
         res.status(200).json(RESPONSE_STATUS.SUCCESS)
+        newAttachments.forEach(item => {tagImage(helper.getStaticFilePathFromRelateFilePath(item.source))})
+        SocketServer.instance.emitAddPost(data.userID, result)
       })
       .catch(error => {
         console.log('Error when store post: ', error)
@@ -117,9 +128,10 @@ class PostController {
     switch (data.action) {
       case POST_ACTION.UPDATE_CONTENT: {
         postModel
-          .findByIdAndUpdate(postID, { content: data.content, scope: data.scope })
+          .findByIdAndUpdate(postID, { content: data.content, scope: data.scope }, {returnDocument:'after'})
           .then(result => {
             res.status(200).json(RESPONSE_STATUS.SUCCESS)
+            SocketServer.instance.emitEditPost(postID, result)
           })
           .catch(error => {
             console.log('Error when update content post: ', error)
@@ -165,6 +177,7 @@ class PostController {
     console.log('post id: ', ' ', typeof postID, ' ' ,postID )
     postModel.findByIdAndUpdate(postID, {status: POST_STATUS.TRASH}).then(data => {
       res.status(200).json(RESPONSE_STATUS.SUCCESS)
+      SocketServer.instance.emitRemovePost(postID)
     }).catch(error => {
       console.log('Error when trash post', error)
         res.status(500).json(RESPONSE_STATUS.ERROR)
@@ -176,6 +189,7 @@ class PostController {
     console.log('post id: ', ' ', typeof postID, ' ' ,postID )
     postModel.findByIdAndUpdate(postID, {status: POST_STATUS.DELETE}).then(data => {
       res.status(200).json(RESPONSE_STATUS.SUCCESS)
+      SocketServer.instance.emitRemovePost(postID)
     }).catch(error => {
       console.log('Error when delete post', error)
         res.status(500).json(RESPONSE_STATUS.ERROR)

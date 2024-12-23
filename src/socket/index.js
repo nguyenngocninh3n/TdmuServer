@@ -17,7 +17,7 @@ const runSocketServer = server => {
 
     client.on('connection', async data => {
       userData._id = data.data.userID
-      await UserController.helper.handleActiveUser(userData._id)
+      await userHelper.handleActiveUser(userData._id)
       const conventionIDs = await conventionHelper
         .handleGetConventionIDs(userData._id)
         .then(data => data.data)
@@ -35,7 +35,7 @@ const runSocketServer = server => {
         .emit('friendActive', { userID: userData._id, active: true, updatedAt: new Date() })
     })
     client.on('disconnect', data => {
-      UserController.helper.handleInActiveUser(userData._id)
+      userHelper.handleInActiveUser(userData._id)
       io.in('friend_' + userData._id).emit('friendActive', {
         userID: userData._id,
         active: false,
@@ -159,17 +159,69 @@ const runSocketServer = server => {
 }
 
 class instance  {
+  
+  // CONVENTION
   emitChangeConventionAka = (conventionID, userID, aka) => {
     io.in(conventionID).emit('emitChangeConventionAka', {conventionID, userID, value: aka})
   }
-
   emitChangeConventionAvatar = (conventionID, avatar) => {
     io.in(conventionID).emit('emitChangeConventionAvatar', {conventionID, value: avatar})
   }
-
   emitChangeConventionName = (conventionID, name) => {
       io.in(conventionID).emit('emitChangeConventionName', {conventionID, value: name})
   }
+
+
+  // COMMENT
+  emitAddComment = (postIdString, comment) => {
+    const postID = postIdString.toString()
+    io.in(postID).emit('emitAddComment', {postID, comment} )
+  }
+
+  emitEditComment = (postIdString, comment) => {
+    const postID = postIdString.toString()
+    io.in(postID).emit('emitEditComment', {postID, comment} )
+  }
+
+  emitDeleteComment = (postIdString, commentIdString) => {
+    const postID = postIdString.toString()
+    const commentID = commentIdString.toString()
+    io.in(postID).emit('emitDeleteComment', {postID, commentID} )
+  }
+
+  emitReactionComment = (postIdString, commentIdString, reactions) => {
+    const postID = postIdString.toString()
+    const commentID = commentIdString.toString()
+    io.in(postID).emit('emitReactionComment', {postID, commentID, reactions})
+  }
+
+  // POST
+
+  emitAddPost = (userID, post) => {
+    io.in(userID).emit('emitAddPost', {post})
+  }
+
+  emitEditPost = (postIdString, post) => {
+    const postID = postIdString.toString()
+    io.in(postID).emit('emitEditPost', {post})
+  }
+
+  emitRemovePost = postIdString => {
+    const postID = postIdString.toString()
+    io.in(postID).emit('emitRemovePost', {postID})
+  }
+
+
+  emitReactionPostChange = (postIdString, post) => {
+    const postID = postIdString.toString()
+    io.in(postID).emit('emitReactionPostChange', {post})
+  }
+
+  emitCommentPostChange = (postIdString, post) => {
+    const postID = postIdString.toString()
+    io.in(postID).emit('emitCommentPostChange', {post})
+  }
+
 }
 
 const SocketServer = { runSocketServer, instance: new instance() }

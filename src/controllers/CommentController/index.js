@@ -1,8 +1,10 @@
+const { Socket } = require('socket.io')
 const commentModel = require('../../models/comment.model')
 const groupModel = require('../../models/group.model')
 const postModel = require('../../models/post.model')
 const userModel = require('../../models/user.model')
 const fcmNotify = require('../../notify/fcmNotify')
+const SocketServer = require('../../socket')
 const { RESPONSE_STATUS, TYPE_SCREEN, NOTIFICATION_TYPE } = require('../../utils/constants')
 const notificationHelper = require('../NotificationController/notificationHelper')
 
@@ -27,7 +29,15 @@ class CommentController {
       .create(newComment)
       .then(async data => {
         res.status(200).json(data)
-        const post = await postModel.findByIdAndUpdate(data.postID, {$inc: {commentsCount: 1}}, {returnDocument:'after'}).then(response => response)
+        SocketServer.instance.emitAddComment(data.postID, data)
+        console.log('recieve data comment: ', newComment)
+        if(newComment?.rootParentID) {
+          await commentModel.findByIdAndUpdate(newComment.rootParentID, {$inc: {commentChildCount: 1}})
+        } 
+        const post = await postModel.findByIdAndUpdate(data.postID, {$inc: {commentsCount: 1}}, {returnDocument:'after'}).then(response => {
+        SocketServer.instance.emitCommentPostChange(response._id, response)
+        return response
+        })
         if (data.userID !== post.userID) {
           const parentComment = data.parentID ? await commentModel.findById(data.parentID) : null
           const postOwner = await userModel.findById(post.userID)
@@ -88,9 +98,10 @@ class CommentController {
     const commentID = req.params.id
     console.log('update comment: ', commentID, ' ', req.body.value)
     commentModel
-      .findByIdAndUpdate(commentID, { content: req.body.value })
-      .then(data => {
+      .findByIdAndUpdate(commentID, { content: req.body.value }, {returnDocument:'after'})
+      .then( data => {
         res.status(200).json(RESPONSE_STATUS.SUCCESS)
+        SocketServer.instance.emitEditComment(data.postID, data)
       })
       .catch(error => {
         console.log('Error when edit comment: ', error)
@@ -102,8 +113,18 @@ class CommentController {
     const commentID = req.params.id
     commentModel
       .findByIdAndDelete(commentID)
-      .then(data => {
+      .then(async data => {
         res.status(200).json(RESPONSE_STATUS.SUCCESS)
+        
+        if(data.rootParentID) {
+          await commentModel.findByIdAndUpdate(data.rootParentID, {$inc: {commentChildCount: -1}})
+        }
+        SocketServer.instance.emitDeleteComment(data.postID, commentID)
+        await postModel.findByIdAndUpdate(data.postID, {$inc: {commentsCount: -1}}, {returnDocument:'after'}).then(response => {
+          SocketServer.instance.emitCommentPostChange(response._id, response)
+
+        })
+
       })
       .catch(error => {
         console.log('Error when delete comment: ', error)
@@ -123,7 +144,7 @@ class CommentController {
         if (isExist) {
           commentModel
             .findByIdAndUpdate(commentID, { reactions: newReactions }, { returnDocument: 'after' })
-            .then(data => console.log(data))
+            .then(data => SocketServer.instance.emitReactionComment(data.postID, commentID,data.reactions))
         } else {
           commentModel
             .findByIdAndUpdate(
@@ -131,7 +152,7 @@ class CommentController {
               { reactions: [...reactions, userID] },
               { returnDocument: 'after' }
             )
-            .then(data => console.log(data))
+            .then(data => SocketServer.instance.emitReactionComment(data.postID, commentID,data.reactions))
         }
         res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: !isExist })
       })
