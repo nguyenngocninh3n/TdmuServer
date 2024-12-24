@@ -1,9 +1,9 @@
 const { Server } = require('socket.io')
-const ChatDataModel = require('../models/chatData.convention.model')
-const userModel = require('../models/user.model')
-const UserController = require('../controllers/UserController')
-const conventionModel = require('../models/convention.model')
-const ConventionController = require('../controllers/ConventionController')
+// const ChatDataModel = require('../models/chatData.convention.model')
+// const userModel = require('../models/user.model')
+// const UserController = require('../controllers/UserController')
+// const conventionModel = require('../models/convention.model')
+// const ConventionController = require('../controllers/ConventionController')
 const FriendController = require('../controllers/FriendController')
 const fcmNotify = require('../notify/fcmNotify')
 const userHelper = require('../controllers/UserController/userHelper')
@@ -43,7 +43,7 @@ const runSocketServer = server => {
       })
     })
     client.on('disconnection', data => {
-      UserController.helper.handleInActiveUser(userData._id)
+      userHelper.handleInActiveUser(userData._id)
       io.in('friend_' + userData._id).emit('friendActive', {
         userID: userData._id,
         active: false,
@@ -222,6 +222,22 @@ class instance  {
     io.in(postID).emit('emitCommentPostChange', {post})
   }
 
+
+  // PROFILE
+  emitBioProfileChange = (userID, aka) => {
+    const customID = userID.toString()
+    io.in(customID).emit('emitBioProfileChange', {aka})
+  }
+
+  emitAvatarProfileChange = (userID, avatar) => {
+    const customID = userID.toString()
+    io.in(customID).emit('emitAvatarProfileChange', {avatar})
+  }
+
+  emitBackgroundProfileChange = (userID, background) => {
+    const customID = userID.toString()
+    io.in(customID).emit('emitBackgroundProfileChange', {background})
+  }
 }
 
 const SocketServer = { runSocketServer, instance: new instance() }

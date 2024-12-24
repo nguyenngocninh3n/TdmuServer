@@ -8,6 +8,7 @@ const friendModel = require('../../models/friend.model')
 const groupHelper = require('../GroupController/groupHelper')
 const helper = require('../../helper')
 const friendSuggestModel = require('../../models/friend.suggest.model')
+const SocketServer = require('../../socket')
 const convertDataToUser = data => {
   const newUser = {
     _id: data._id,
@@ -190,9 +191,10 @@ class userController {
   async handleUpdateBio(req, res) {
     const userID = req.params.id
     userModel
-      .findByIdAndUpdate(userID, { bio: req.body.value })
+      .findByIdAndUpdate(userID, { bio: req.body.value }, {returnDocument:'after'})
       .then(data => {
         res.status(200).json(RESPONSE_STATUS.SUCCESS)
+        SocketServer.instance.emitBioProfileChange(userID, data.bio)
       })
       .catch(error => {
         console.log('error when update bio: ', error)
@@ -213,9 +215,36 @@ class userController {
     helper.storeMultiFile(staticFilePaths, dirPath, [{type: POST_ATTACHMENT.IMAGE, source: avatar}])
     helper.deleteFileFromRelativeFilePath(current)
     userModel
-      .findByIdAndUpdate(userID, { avatar:relativeFilePaths[0].source })
+      .findByIdAndUpdate(userID, { avatar:relativeFilePaths[0].source }, {returnDocument:'after'})
       .then(data => {
+        console.log('update avatar successfully: ', relativeFilePaths[0].source )
         res.status(200).json(RESPONSE_STATUS.SUCCESS)
+        SocketServer.instance.emitAvatarProfileChange(userID, data.avatar)
+      })
+      .catch(error => {
+        console.log('error when update avatar: ', error)
+        res.status(500).json(RESPONSE_STATUS.ERROR)
+      })
+  }
+
+  async handleUpdateBackground(req, res) {
+    const userID = req.params.id
+   const {current, avatar} = req.body
+    const [relativeFilePaths, staticFilePaths, dirPath] = helper.getUploadFileAndFolderPath(
+      __dirname,
+      FOLDER_NAME.USERS,
+      userID,
+      [{ type: POST_ATTACHMENT.IMAGE }]
+    )
+  
+    helper.storeMultiFile(staticFilePaths, dirPath, [{type: POST_ATTACHMENT.IMAGE, source: avatar}])
+    helper.deleteFileFromRelativeFilePath(current)
+    userModel
+      .findByIdAndUpdate(userID, { background:relativeFilePaths[0].source }, {returnDocument:'after'})
+      .then(data => {
+        console.log('update background successfully: ', relativeFilePaths[0].source )
+        res.status(200).json(RESPONSE_STATUS.SUCCESS)
+        SocketServer.instance.emitBackgroundProfileChange(userID, data.background)
       })
       .catch(error => {
         console.log('error when update avatar: ', error)

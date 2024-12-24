@@ -98,22 +98,27 @@ class PostController {
       'attachment in store post: ', data.scope
     )
     const newAttachments = handleSavedAndGetAttachments(data.userID, data.attachments, data.groupID ? 'groups/' + data.groupID.toString() +'/' : null)
-    for(let item in newAttachments) {
-      if(item.type === MESSAGE_TYPE.VIDEO) {
-        const labels = await tagVideo(helper.getStaticFilePathFromRelateFilePath(item.source))
-        console.log('labels video: ', labels)
-      }
-    }
+
     const newPost = new postModel({
      ...data,
       attachments: newAttachments
     })
     newPost
       .save()
-      .then(result => {
+      .then(async result => {
         res.status(200).json(RESPONSE_STATUS.SUCCESS)
-        newAttachments.forEach(item => {tagImage(helper.getStaticFilePathFromRelateFilePath(item.source))})
         SocketServer.instance.emitAddPost(data.userID, result)
+        for(let index in newAttachments) {
+          const item = newAttachments[index]
+          const filePath = helper.getStaticFilePathFromRelateFilePath(item.source)
+          if(item.type === MESSAGE_TYPE.VIDEO) {
+            // const labels = await tagVideo(filePath)
+            console.log('labels video: ', labels)
+          } else if (item.type === MESSAGE_TYPE.IMAGE) {
+            const results = await tagImage(filePath)
+           await postModel.findByIdAndUpdate(result._id, {labels: results.at(0), transLabels: results.at(1), detectText: results.at(2)})
+          }
+        }
       })
       .catch(error => {
         console.log('Error when store post: ', error)
@@ -143,8 +148,20 @@ class PostController {
         const newAttachments = handleSavedAndGetAttachments(data.userID, data.attachments)
         postModel
           .findByIdAndUpdate(postID, { attachments: newAttachments, scope: data.scope })
-          .then(result => {
+          .then(async result => {
             res.status(200).json(RESPONSE_STATUS.SUCCESS)
+            for(let index in newAttachments) {
+              const item = newAttachments[index]
+              const filePath = helper.getStaticFilePathFromRelateFilePath(item.source)
+              if(item.type === MESSAGE_TYPE.VIDEO) {
+                // const labels = await tagVideo(filePath)
+                console.log('labels video: ', labels)
+              } else if (item.type === MESSAGE_TYPE.IMAGE) {
+                const results = await tagImage(filePath)
+                await postModel.findByIdAndUpdate(result._id, {labels: results.at(0), transLabels: results.at(1), detectText: results.at(2)})
+              }
+            }
+            
           })
           .catch(error => {
             console.log('Error when update attachments post: ', error)

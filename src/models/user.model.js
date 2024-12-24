@@ -9,6 +9,7 @@ const userModel = new Schema({
   phone: { type: String },
   avatar: { type: String },
   bio: {type: String, default: null},
+  background: {type: String, default: null},
   followerNum: { type: Number },
   followingNum: { type: Number },
   sex: { type: Boolean },

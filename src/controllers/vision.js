@@ -25,11 +25,11 @@ async function tagImage(imagePath) {
     }
 
     const labels = result.labelAnnotations.map(label => label.description)
+    const transLabels = await translateText(labels)
     console.log('Labels detected:', labels)
-     await detectText(imagePath)
-    await detectTextType2(imagePath)
+    const detectTextString = await detectText(imagePath)
 
-    return labels
+    return [labels, transLabels, detectTextString]
   } catch (error) {
     console.error('Error tagging image:', error)
     throw error
@@ -42,6 +42,7 @@ async function tagVideo(videoPath) {
 
   return new Promise((resolve, reject) => {
     const labels = new Set()
+
 
     ffmpeg(videoPath)
       .on('end', async () => {
@@ -78,8 +79,9 @@ async function detectText(imagePath) {
     if (detections.length > 0) {
       console.log('Detected text:')
       console.log(detections[0].description)
+      return detections[0].description
     } else {
-      console.log('No text detected.')
+      return ''
     }
   } catch (error) {
     console.error('Error detecting text:', error)
@@ -109,16 +111,15 @@ const {Translate} = require('@google-cloud/translate').v2;
 const translate = new Translate();
 
 
-async function translateText(text,target ) {
+async function translateText(text, source, target ) {
   // Translates the text into the target language. "text" can be a string for
   // translating a single piece of text, or an array of strings for translating
   // multiple texts.
   let [translations] = await translate.translate(text, target ?? 'vi');
-  translations = Array.isArray(translations) ? translations : [translations];
-  console.log('Translations:');
-  translations.forEach((translation, i) => {
-    console.log(`${text[i]} => (${target ?? 'vi'}) ${translation}`);
-  });
+  const results = Array.isArray(translations) ? translations : [translations];
+  console.log('Translations: ', results);
+  return results
+
 }
 
 

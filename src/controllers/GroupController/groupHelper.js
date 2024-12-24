@@ -29,12 +29,18 @@ const getGroupByID = async groupID =>
     })
 
 const getGroupsByUserID = async userID => {
+  console.log('userID in getGroupsByid: ', userID)
   const groupIDs = await groupUserModel.findById(userID).then(data => {
-    return data.groupIDs
+    if(data) {
+      return data.groupIDs
+    }
   })
+  console.log('groupIDs in getGroupsByid: ', groupIDs)
   const groupData = await groupModel.find({ _id: { $in: groupIDs } })
   return { status: RESPONSE_STATUS.SUCCESS, data: groupData }
 }
+
+
 
 const getGroupPostsOfUser = async (groupID, userID) =>
   await postModel

@@ -580,10 +580,11 @@ console.log('data into store message: ', data)
         type: data.type,
         message: data.customMessage
       }
-      conventionModel
+      await conventionModel
         .findByIdAndUpdate(conventionID, { name: data.notify.value })
         .then(response => {
           SocketServer.instance.emitChangeConventionName(conventionID, data.notify.value )
+
         })
       handleStoreTextMessage({ conventionID, data: customData, res })
     } else {

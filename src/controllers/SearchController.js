@@ -93,9 +93,92 @@ class SearchController {
       })
   }
 
-  async getSearchImage(req, res) {}
+  async getSearchVideo (req, res) {}
 
-  async getSearchVideo(req, res) {}
+  async getSearchImage (req, res) {
+    const { userID, queryString } = req.params
+    console.log('into get search post: ', userID, ' ', queryString)
+    const queryWords = queryString.split(' ').filter(word => word.trim() !== '').map(word => word.toLowerCase());
+    const friendIDs = await friendHelper
+      .getListFriendsID(userID)
+      .then(response => response.data.data)
+    friendIDs.push(userID)
+    const groupIDs = await groupHelper
+      .getGroupsByUserID(userID)
+      .then(response => response.data.map(item => item._id))
+    const allgroups = await groupHelper.getAllgroup()
+    const publicGroup = allgroups.data
+      .filter(item => item.scope === SCOPE.PUBLIC)
+      .map(item => item._id)
+
+    postModel
+      .find({
+        $and: [
+          {
+            $or: [
+              {
+                $or: [
+                  {
+                    scope: SCOPE.PUBLIC
+                  },
+                  {
+                    userID: { $in: friendIDs },
+                    scope: SCOPE.FRIEND
+                  },
+                  {
+                    userID: userID,
+                    scope: SCOPE.PRIVATE
+                  }
+                ]
+              },
+              {
+                $or: [
+                  {
+                    userID: { $in: [...groupIDs, ...publicGroup] }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            $or: [
+              { labels: { $in: queryWords } },
+              { transLabels: { $in: queryWords } },
+              { detectText: { $regex: queryWords.join('|'), $options: 'i' } }
+            ]
+          }
+        ]
+      })
+
+      .then(data => {
+        // Chấm điểm các bài viết
+        const scoredPosts = data.map(post => {
+          let score = 0
+          if (post.labels) {
+            score += post.labels.filter(label => queryWords.includes(label.toLowerCase())).length
+          }
+          if (post.transLabels) {
+            score += post.transLabels.filter(transLabel =>
+              queryWords.includes(transLabel.toLowerCase())
+            ).length
+          }
+          if (post.detectText) {
+            const detectWords = post.detectText.split(' ').map(word => word.toLowerCase())
+            score += detectWords.filter(word => queryWords.includes(word)).length
+          }
+
+          return { post, score }
+        })
+
+        scoredPosts.sort((a, b) => b.score - a.score)
+        const sortedPosts = scoredPosts.map(item => item.post) // Chỉ lấy bài viết
+        res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: sortedPosts })
+      })
+      .catch(error => {
+        console.log('Error when get serch post: ', error)
+        res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: null })
+      })
+  }
 }
 
 module.exports = new SearchController()

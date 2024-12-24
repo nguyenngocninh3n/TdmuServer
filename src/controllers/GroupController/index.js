@@ -30,7 +30,7 @@ class GroupController {
   async handleGetGroupsByUserID(req, res) {
     const {userID} = req.params
     console.log('handle get group by userID: ', userID)
-    groupHelper.getGroupsByUserID.then(response => {
+    groupHelper.getGroupsByUserID(userID).then(response => {
       if (response.status === RESPONSE_STATUS.SUCCESS) {
         res.status(200).json(response)
       } else {

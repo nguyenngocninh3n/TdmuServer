@@ -17,7 +17,10 @@ const postModal = new Schema(
     sharesCount: {type: Number, default: null},
     reactionsCount: {type: Number, default: 0},
     commentsCount: {type: Number, default: 0},
-    pollID: mongoose.Types.ObjectId
+    pollID: mongoose.Types.ObjectId,
+    labels: {type:Array, default: []},
+    transLabels: {type: Array, default: []},
+    detectText: {type: String, default: ''}
   },
   { timestamps: true }
 )

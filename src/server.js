@@ -53,5 +53,4 @@ admin.initializeApp({
 
 server.listen(PORT, HOST,async  () => {
   console.log(`Server is running on: http://${HOST}:${PORT}`)
-  await translateText('Hi every body')
 })
