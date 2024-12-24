@@ -86,7 +86,11 @@ class SearchController {
     groupModel
       .find({ $text: { $search: customQuery } }, { score: { $meta: 'textScore' } })
       .sort({ score: { $meta: 'textScore' } })
-      .then(data => res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data }))
+      .then(data => {
+        console.log('data group: ', data)
+        res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
+      }
+      )
       .catch(error => {
         console.log('Error when get serch group: ', error)
         res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: null })

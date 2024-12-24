@@ -105,7 +105,7 @@ const handleStoreUploadFileMessage = ({ conventionID, data, res }) => {
       })
 
       const senderInfo = newData.members.find(item => item._id === data.senderID)
-      const customTitle = newData.name.trim() || senderInfo.aka.trim() || senderInfo.userName
+      const customTitle = newData?.name?.trim() || senderInfo?.aka?.trim() || senderInfo.userName
       const customName = senderInfo.aka || senderInfo.userName
       console.log('customName: ', customName)
 
