@@ -1,10 +1,20 @@
-const helper = require('../helper')
-const groupModel = require('../models/group.model')
-const postModel = require('../models/post.model')
-const userModel = require('../models/user.model')
-const { SCOPE, RESPONSE_STATUS } = require('../utils/constants')
-const friendHelper = require('./FriendController/friendHelper')
-const groupHelper = require('./GroupController/groupHelper')
+const { response } = require('express')
+const helper = require('../../helper')
+const groupModel = require('../../models/group.model')
+const postModel = require('../../models/post.model')
+const userModel = require('../../models/user.model')
+const { SCOPE, RESPONSE_STATUS } = require('../../utils/constants')
+const friendHelper = require('../FriendController/friendHelper')
+const groupHelper = require('../GroupController/groupHelper')
+const {
+  updateSearchHistory,
+  addSearchHistory,
+  findSearchHistoryByParams,
+  removeSearchHistory,
+  findSearchHistoryListByUserID,
+  removeSearchHistoryBySearchID,
+  removeAllSearchHistoryByUserID
+} = require('./updateSearchHistory')
 
 class SearchController {
   async getSearchPost(req, res) {
@@ -89,20 +99,22 @@ class SearchController {
       .then(data => {
         console.log('data group: ', data)
         res.status(200).json({ status: RESPONSE_STATUS.SUCCESS, data: data })
-      }
-      )
+      })
       .catch(error => {
         console.log('Error when get serch group: ', error)
         res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: null })
       })
   }
 
-  async getSearchVideo (req, res) {}
+  async getSearchVideo(req, res) {}
 
-  async getSearchImage (req, res) {
+  async getSearchImage(req, res) {
     const { userID, queryString } = req.params
     console.log('into get search post: ', userID, ' ', queryString)
-    const queryWords = queryString.split(' ').filter(word => word.trim() !== '').map(word => word.toLowerCase());
+    const queryWords = queryString
+      .split(' ')
+      .filter(word => word.trim() !== '')
+      .map(word => word.toLowerCase())
     const friendIDs = await friendHelper
       .getListFriendsID(userID)
       .then(response => response.data.data)
@@ -182,6 +194,33 @@ class SearchController {
         console.log('Error when get serch post: ', error)
         res.status(500).json({ status: RESPONSE_STATUS.ERROR, data: null })
       })
+  }
+
+  async handleGetSearchHistoryListByUserID (req, res) {
+    const {userID} = req.params
+    const response = await findSearchHistoryListByUserID(userID)
+    res.status(200).json({status: RESPONSE_STATUS.SUCCESS, data: response})
+  }
+
+  async handleAddSearchHistory(req, res) {
+    const { search, type, userID } = req.params
+    const response = await findSearchHistoryByParams(userID, search, type)
+    const result = response
+      ? await updateSearchHistory(response._id)
+      : await addSearchHistory(userID, search, type)
+    res.status(200).json({status: RESPONSE_STATUS.SUCCESS, data: result})
+  }
+
+  async handleRemoveSearchHistoryByID (req, res) {
+    const {searchID} = req.params
+    await removeSearchHistoryBySearchID(searchID)
+    res.status(200).json({status: RESPONSE_STATUS.SUCCESS, data: {}})
+  }
+
+  async handleRemoveSearchHistoryByUserID (req, res) {
+    const {userID} = req.params
+    await removeAllSearchHistoryByUserID(userID)
+    res.status(200).json({status: RESPONSE_STATUS.SUCCESS, data: []})
   }
 }
 
