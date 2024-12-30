@@ -1,4 +1,8 @@
 const { log } = require('../../helper')
+const conventionModel = require('../../models/convention.model')
+const friendModel = require('../../models/friend.model')
+const groupMemberModel = require('../../models/group.member.model')
+const postModel = require('../../models/post.model')
 const userModel = require('../../models/user.model')
 const convertDataToUser = data => {
   const newUser = {
@@ -37,10 +41,23 @@ async function addUser(data) {
   return newUser
 }
 
+async function updateUserAvatarRelationship (userID, newAvatarPath) {
+  //convention
+  await conventionModel.updateMany({uids:userID, 'members._id': userID}, {$set: {'members.$.avatar': newAvatarPath}})
+  //post
+  await postModel.updateMany({userID}, {avatar: newAvatarPath})
+  // friend
+
+  await friendModel.updateMany({'data._id': userID}, {$set: {'data.$.avatar': newAvatarPath}})
+  //groupMember
+  await groupMemberModel.updateMany({userID}, {avatar: newAvatarPath})
+}
+
 const userHelper = {
   getUserDataById,
   handleActiveUser,
-  handleInActiveUser
+  handleInActiveUser,
+  updateUserAvatarRelationship
 }
 
 module.exports = userHelper

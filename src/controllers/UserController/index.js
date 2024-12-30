@@ -9,6 +9,7 @@ const groupHelper = require('../GroupController/groupHelper')
 const helper = require('../../helper')
 const friendSuggestModel = require('../../models/friend.suggest.model')
 const SocketServer = require('../../socket')
+const userHelper = require('./userHelper')
 const convertDataToUser = data => {
   const newUser = {
     _id: data._id,
@@ -214,6 +215,7 @@ class userController {
   
     helper.storeMultiFile(staticFilePaths, dirPath, [{type: POST_ATTACHMENT.IMAGE, source: avatar}])
     helper.deleteFileFromRelativeFilePath(current)
+    await userHelper.updateUserAvatarRelationship(userID, relativeFilePaths[0].source )
     userModel
       .findByIdAndUpdate(userID, { avatar:relativeFilePaths[0].source }, {returnDocument:'after'})
       .then(data => {
